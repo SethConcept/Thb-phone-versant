@@ -53,6 +53,16 @@ remains for module drills only.
 Every attempt stores its draw (`interviews.exam_meta`, kind `cert`) so the
 grader scores exactly what was dealt, and every call is different.
 
+**Property registry:** every seller carries a structured property record
+(address, city/state, type, beds/baths, price tier) that feeds both the
+caller (speaks only from it, reveals one fact per question, John-style
+vague opener + engagement meter) and the grader (ground truth). Three are
+REAL active Redfin listings — Terri's Vallejo double-wide in a park,
+Marcus's Dallas TX house, Jonathan's ~$3M Menlo Park listing — kept in the
+clearly-marked REAL_LISTINGS swap block in `lib/academy.ts`; trainees are
+expected to look the address up mid-call and act on what they find.
+Refresh the three when listings go stale (any equivalents work).
+
 ## Grading (deterministic where it matters)
 
 - The AI grader returns structured JSON (`scores.detail`); the **code**

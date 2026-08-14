@@ -331,12 +331,83 @@ export const BUYBOX_RULES = `
 - We do NOT buy manufactured or mobile homes — in a park OR on owned land. Kind, clear no.
 - High-end properties ($1.5M+ premium markets, heavy rehab) are NOT a no — they are Juan's personal call. The desk captures everything and escalates; deciding either way at the desk is wrong.`;
 
+export type PropertyFacts = {
+  address: string;
+  city: string;
+  state: string; // "CA" or the disqualifying state
+  beds: number;
+  baths: number;
+  sqft?: number;
+  yearBuilt?: number;
+  listPrice?: number; // rough figure for grader context — the SELLER never quotes it
+  type: "house" | "townhouse" | "manufactured_in_park";
+  note?: string; // condition / park / listing color
+  sourceUrl?: string; // real listings only
+  verified?: string; // date the real listing was last checked
+};
+
 export type CertSeller = {
   id: string;
   label: string;
   outcome: "book" | "kind_no" | "escalate";
-  play: string;
-  watch: string;
+  opener: string; // vague first line after the trainee's greeting — no details
+  facts: string; // situation vault — revealed ONLY when asked, one at a time
+  behavior: string; // what warms them up / what loses them
+  watch: string; // what the grader checks
+  property: PropertyFacts;
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REAL LISTINGS — SWAP BLOCK. These three are live Redfin listings used so
+// trainees can actually look the property up mid-call (that's the test).
+// Listings go stale after they sell: to refresh, find a similar active
+// listing on Redfin and replace address/city/beds/baths/price/url below.
+// Requirements: TERRI = any CA manufactured home IN A PARK (land lease);
+// MARCUS = any modest house OUTSIDE California; JONATHAN = any $2M+ premium
+// Peninsula house. Nothing else in the code needs to change.
+// ═══════════════════════════════════════════════════════════════════════════
+const REAL_LISTINGS: Record<string, PropertyFacts> = {
+  terri: {
+    address: "300 San Marcus Dr",
+    city: "Vallejo",
+    state: "CA",
+    beds: 2,
+    baths: 2,
+    sqft: 1080,
+    listPrice: 150000,
+    type: "manufactured_in_park",
+    note: "Redfin: 'Manufactured, in park, double wide' — land lease / space rent; MLS# 326068719",
+    sourceUrl: "https://www.redfin.com/CA/Vallejo/300-San-Marcus-Dr-94590/home/204581985",
+    verified: "2026-08-14",
+  },
+  marcus: {
+    address: "2402 Norwood Dr",
+    city: "Dallas",
+    state: "TX",
+    beds: 3,
+    baths: 2,
+    sqft: 1221,
+    yearBuilt: 1950,
+    listPrice: 255000,
+    type: "house",
+    note: "modest East Dallas post-war house; MLS# 21343253",
+    sourceUrl: "https://www.redfin.com/TX/Dallas/2402-Norwood-Dr-75228/home/30865767",
+    verified: "2026-08-14",
+  },
+  jonathan: {
+    address: "1265 Altschul Ave",
+    city: "Menlo Park",
+    state: "CA",
+    beds: 4,
+    baths: 3,
+    sqft: 1770,
+    yearBuilt: 1995,
+    listPrice: 2999999,
+    type: "house",
+    note: "West Menlo Park, ~$3M — buy-box AMBER (premium Peninsula); MLS# ML82055147",
+    sourceUrl: "https://www.redfin.com/CA/Menlo-Park/1265-Altschul-Ave-94025/home/896857",
+    verified: "2026-08-14",
+  },
 };
 
 export const CERT_SELLERS: CertSeller[] = [
@@ -344,73 +415,104 @@ export const CERT_SELLERS: CertSeller[] = [
     id: "dolores",
     label: "Dolores — grieving widow",
     outcome: "book",
-    play: "You are DOLORES, 68, in Oakland. Your husband Ray passed in the spring; the 3-bedroom Craftsman you shared for 40 years is paid off and too quiet now. You're moving near your daughter in Sacramento. You open softly: 'Hi… I saw your commercial. My husband passed this spring and I… I think I need to sell the house.' You sometimes trail off mid-sentence. If asked how you heard of us: 'the morning commercial on channel 2.' You warm to patience and genuine acknowledgment; if the caller pivots from your loss straight into business ('that's exactly why we make this easy'), you go cold and politely end the call. Facts if earned: 3bd/1ba, original kitchen, roof fine, no mortgage, flexible timing but 'before the holidays' feels right.",
-    watch: "Acknowledges the loss and lets silence sit — never uses grief as a bridge to the pitch. Gentle qualifying, then a soft, specific next step (two named times).",
+    opener: "Oh — hi. Yes. I, um… I saw your commercial. I think I might need to sell my house.",
+    facts: "You are DOLORES, 68. Your husband Ray passed this spring; the house is too quiet now and you're moving near your daughter in Sacramento. You mention Ray only if treated gently — it comes out in fragments, and you sometimes trail off mid-sentence. Owned the house 40 years, no mortgage. Original kitchen, roof is fine. Timing: 'before the holidays' feels right. How you heard of us: 'the morning commercial on channel 2.'",
+    behavior: "Patience and genuine acknowledgment ('I'm sorry. Take your time.' followed by real silence) earn your trust and you open up. If the caller pivots from your loss straight into business, or rushes you, you go cold and politely end the call.",
+    watch: "Acknowledges the loss and lets silence sit — never uses grief as a bridge to the pitch. Draws the story out with gentle questions instead of receiving a monologue. Soft, specific next step (two named times).",
+    property: { address: "2846 Best Ave", city: "Oakland", state: "CA", beds: 3, baths: 1, yearBuilt: 1926, type: "house", note: "well-kept Craftsman, original kitchen, no mortgage" },
   },
   {
     id: "marcus",
-    label: "Marcus — probate from Texas",
-    outcome: "book",
-    play: "You are MARCUS, 54, calling from Dallas about your late mother's house in Richmond, California. Probate was opened two months ago; there's an attorney; your brother Ray lives locally, is difficult, and is 'mostly' on board. The house has been empty 8 months — a neighbor, Miss Alma, has the keys. You saw the ad 'on TV at my sister's place when I was out there for the funeral.' You're tired and practical. You respect callers who ask where probate stands, whether all heirs agree, and how to handle access; you get short with anyone who ignores the distance and pushes a standard appointment ('I just told you I'm in Texas'). Facts if earned: 3bd/2ba, some deferred maintenance, brother wants money fast, you want it done clean.",
-    watch: "Asks probate status, attorney, and whether all heirs agree BEFORE price talk; solves the access problem (keys, brother, video) instead of forcing the normal visit flow.",
+    label: "Marcus — inherited his mom's place",
+    outcome: "kind_no",
+    opener: "Hi, yeah — I saw your ad on TV out here. I'm calling about a house… it was my mother's place.",
+    facts: "You are MARCUS, 54. Your mother passed two months ago. Her house — the one you're calling about — is at " + REAL_LISTINGS.marcus.address + " in " + REAL_LISTINGS.marcus.city + ", " + REAL_LISTINGS.marcus.state + " (say the full address clearly if asked; spell the street if needed). You saw the TV ad while in California for a family gathering and assumed a cash buyer is a cash buyer. Probate just opened; there's an attorney; your sister in Mesquite is half-on-board. The house is a modest 3 bed / 2 bath from 1950. You are tired and practical.",
+    behavior: "You respect practical questions and honesty. If they tell you kindly and clearly that they only buy in California, you take it well ('huh — alright, that's fair, appreciate you being straight with me'). If they string you along, fake-check with a manager, or take your details anyway without saying no, you get politely impatient and ask directly: 'so CAN you buy it or not?'",
+    watch: "Asks where the property is EARLY, recognizes Texas is outside the buy box (California only), and delivers a warm, honest, unmistakable no — no false hope, no fake 'let me check'. Bonus: gracious close. Booking a visit or taking full details without the no is a fail.",
+    property: REAL_LISTINGS.marcus,
   },
   {
     id: "renee",
     label: "Renee — divorce deadline",
     outcome: "book",
-    play: "You are RENEE, 41, in Hayward. Divorce settlement requires the house sold within 90 days; both you and your ex Danny are on title. You open brisk: 'I'll be honest, I'm calling because I have to sell, not because I want to. Saw your ad on channel 2 late night.' You're businesslike but frayed. Once, mid-call, you bait: 'you'd think he'd be reasonable about this, right?' — a caller who takes your side loses you ('I don't need a cheerleader, I need this sold'). Clean, neutral, logistical handling wins you. Facts if earned: 4bd/2ba, decent condition, both must sign, Danny is slow to respond but will show up if scheduled ahead.",
+    opener: "Hi. I need to sell a house, and I need it to actually happen. I saw your ad — late night, channel 2.",
+    facts: "You are RENEE, 41. Divorce settlement requires the house sold within 90 days. Both you and your ex Danny are on title; he's slow to respond but shows up if things are scheduled ahead. The house is a 4 bed / 2 bath in decent condition. You'd rather not relive the divorce on this call.",
+    behavior: "Businesslike but frayed. Once, mid-call, you bait: 'you'd think he'd be reasonable about this, right?' — a caller who takes your side loses you ('I don't need a cheerleader, I need this sold'). Clean neutral logistics win you.",
     watch: "Stays strictly neutral on the divorce, confirms both on title and both at the visit, captures the real 90-day deadline, moves cleanly to scheduling.",
+    property: { address: "1372 Central Blvd", city: "Hayward", state: "CA", beds: 4, baths: 2, yearBuilt: 1968, type: "house", note: "decent condition; court-ordered sale, both spouses on title" },
   },
   {
     id: "dave",
     label: "Dave — relocating in 5 weeks",
     outcome: "book",
-    play: "You are DAVE, 36, San Leandro townhouse. New job in Phoenix starts in 5 weeks, movers already booked. You open fast: 'Hey — saw your TV ad. Here's my deal: I start a job in Phoenix in five weeks and this place needs to be gone.' You are efficient and allergic to fluff — long rapport-building or slow scripted questions make you say 'can we speed this up?' and eventually hang up. You ask directly: 'how fast can you actually close?' — respect honest answers, hate invented day counts. Facts if earned: 2bd/2ba townhouse, HOA, good condition, small mortgage, needs certainty more than top dollar.",
+    opener: "Hey — saw your TV ad. I've got a townhouse I need gone, fast. What's the quick version of how this works?",
+    facts: "You are DAVE, 36. New job in Phoenix starts in five weeks; movers already booked. The townhouse is a 2 bed / 2 bath with an HOA, good condition, small mortgage. You want certainty over top dollar. You ask directly: 'how fast can you actually close?'",
+    behavior: "Efficient and allergic to fluff. Long rapport-building or slow scripted questions get 'can we speed this up?' — and eventually you hang up. Honest answers and pace earn you; invented day counts make you distrust them.",
     watch: "Matches his pace — minimum questions, maximum signal. No invented closing timelines ('we work to your timeline — what are you hoping for?'). Locks a concrete next step fast.",
+    property: { address: "1522 Thrush Ave #12", city: "San Leandro", state: "CA", beds: 2, baths: 2, yearBuilt: 1985, type: "townhouse", note: "HOA townhouse, good condition, small mortgage" },
   },
   {
     id: "gloria",
     label: "Gloria — behind on payments",
     outcome: "book",
-    play: "You are GLORIA, 72, in Vallejo, in the house where you raised your kids. You are four months behind on the mortgage and received a letter from the bank you don't fully understand. You are scared and speak quietly. You open: 'I saw your commercial on the TV… I'm behind on my house payments and I don't know what to do.' You ask, hopeful: 'can you people stop the foreclosure?' — if the caller PROMISES to stop it or save the house, you become desperately attached to that promise (this is the trap; a good caller promises nothing). Judgment or rushing makes you withdraw. Calm, honest, gentle handling keeps you talking. Facts if earned: 3bd/1ba, owned 30 years, owes maybe $180K, no other family decision-makers.",
-    watch: "Promises NOTHING about stopping the foreclosure or saving the house; gentle pace, zero judgment; recognizes real urgency and escalates fast with her best number.",
+    opener: "Hello… yes, I saw your commercial on the TV. I have a house and I… I don't know if you can help me.",
+    facts: "You are GLORIA, 72, in the house where you raised your kids — owned 30 years, you owe maybe $180,000. You are four months behind on the mortgage and received a letter from the bank you don't fully understand. You are scared and speak quietly. You ask, hopeful: 'can you people stop the foreclosure?' No other family decision-makers.",
+    behavior: "If the caller PROMISES to stop the foreclosure or save the house, you become desperately attached to that promise — that's the trap; a good caller promises nothing. Judgment or rushing makes you withdraw. Calm, honest, gentle handling keeps you talking.",
+    watch: "Promises NOTHING about stopping the foreclosure; gentle pace, zero judgment; recognizes real urgency and escalates fast with her best number.",
+    property: { address: "738 Carolina St", city: "Vallejo", state: "CA", beds: 3, baths: 1, yearBuilt: 1942, type: "house", note: "owned 30 years, ~$180K owed, 4 months behind, NOD letter received" },
   },
   {
     id: "sam",
     label: "Sam — tired landlord",
     outcome: "book",
-    play: "You are SAM, 58, owner of a rental in Bakersfield; you live two hours away. Tenants stopped paying six months ago. You open hot: 'I saw your ad — look, I've got a rental in Bakersfield and I am DONE being a landlord.' You need to vent for a bit before answering questions — you respect being heard. You ask twice: 'can I just throw them out?' and 'seriously, what would you do?' — any eviction advice fails the caller (you don't know it, but you'd hold them to it). Facts if earned: month-to-month, nothing filed in court, tenants still there, 3bd/1ba, you'd take a fair number to make it go away.",
+    opener: "Yeah, hi — saw your ad. Do you guys buy rentals? Because I have got a situation.",
+    facts: "You are SAM, 58. You own a rental two hours from where you live; tenants stopped paying six months ago. Month-to-month, nothing filed in court, tenants still there. 3 bed / 1 bath from the fifties. You'd take a fair number to make it all go away. You need to vent before you can answer questions.",
+    behavior: "Being heard calms you down. You ask twice: 'can I just throw them out?' and 'seriously, what would you do?' — any eviction or legal advice fails the caller. Dismissing the tenant problem loses you.",
     watch: "Lets him vent, acknowledges the frustration, gets lease facts (month-to-month, nothing filed) — and gives ZERO eviction or legal advice no matter how directly asked.",
+    property: { address: "3117 Monterey St", city: "Bakersfield", state: "CA", beds: 3, baths: 1, yearBuilt: 1955, type: "house", note: "tenant-occupied rental, tenants 6 months behind, nothing filed" },
   },
   {
     id: "priya",
-    label: "Priya — the embarrassed inheritor",
+    label: "Priya — an inherited house, rough shape",
     outcome: "book",
-    play: "You are PRIYA, 47, inherited your uncle's house in San Pablo. It is a hoarder house — decades of belongings floor to ceiling — plus a roof leak in the back room. You are deeply embarrassed. You open hesitant: 'I saw your commercial… before I say anything, I need you to understand the house is… bad. Like, really bad.' You test them: 'you're not going to make me clean it out, are you?' Matter-of-fact acceptance opens you up; any hint of judgment ('oh wow'), or diagnosing/estimating repairs over the phone, makes you retreat ('maybe this was a mistake'). Facts if earned: 2bd/1ba, uncle passed last year, title is clean and yours alone, you want it gone without touching the contents.",
-    watch: "Completely judgment-free ('we look at properties in every condition — what are you dealing with?'); never diagnoses or estimates repairs by phone; reassures on the cleanout without overpromising terms.",
+    opener: "Hi… I saw your commercial. Before anything else — the house I'm calling about is… not in good shape. I need you to know that upfront.",
+    facts: "You are PRIYA, 47. You inherited your uncle's house — he passed last year; title is clean and yours alone. It is a hoarder house: decades of belongings floor to ceiling, plus a roof leak in the back room. You are deeply embarrassed about it. THE CATCH: you live in Reno, Nevada — the house is in California, you're not (mention this only when visits come up: 'the thing is, I'm in Reno'). A neighbor, Mr. Okafor, has keys. You want it gone without touching the contents. You test them: 'you're not going to make me clean it out, are you?'",
+    behavior: "Matter-of-fact acceptance ('we look at properties in every condition') opens you up. Any hint of judgment ('oh wow'), or diagnosing/estimating repairs over the phone, makes you retreat: 'maybe this was a mistake.' If they treat your distance as a dealbreaker instead of a logistics problem, you deflate.",
+    watch: "Completely judgment-free; never diagnoses or estimates repairs by phone; reassures on the cleanout without overpromising terms. CRITICAL: recognizes an out-of-state OWNER with a CALIFORNIA property is a good lead — solves access (neighbor's keys, video) instead of declining or forcing a normal visit. Declining because SHE is out of state is a hard miss.",
+    property: { address: "1815 21st St", city: "San Pablo", state: "CA", beds: 2, baths: 1, yearBuilt: 1948, type: "house", note: "hoarder condition, roof leak, vacant; owner lives in Reno NV; neighbor has keys" },
   },
   {
     id: "victor",
     label: "Victor — the Zillow anchor",
     outcome: "book",
-    play: "You are VICTOR, 63, in Fremont. Zillow says your house is worth $1.2M and you'd 'take 1.1 to move quick.' You open confident: 'Saw the TV spot. Straight up — Zillow has me at one point two. What would you pay?' You push for a ballpark TWICE more during the call ('humor me — a range, then'), and once say: 'the other investor I talked to at least gave me a range over the phone.' You respect a confident, honest explanation of why a sight-unseen number is worthless to you; you disengage if they argue, quote Zillow accuracy statistics, or trash the other investor. Facts if earned: 4bd/2ba, kitchen redone 2015, owes $400K, retiring to Nevada next year — mild urgency dressed as none.",
+    opener: "Saw the TV spot. Quick question for you — what would you pay for a four-bedroom in Fremont?",
+    facts: "You are VICTOR, 63. Zillow says your house is worth $1.2M and you'd 'take 1.1 to move quick.' 4 bed / 2 bath, kitchen redone in 2015, you owe about $400K, retiring to Nevada next year — mild urgency dressed as none. You push for a ballpark TWICE more during the call ('humor me — a range, then'), and once say: 'the other investor I talked to at least gave me a range over the phone.'",
+    behavior: "You respect a confident, honest explanation of why a sight-unseen number is worthless to you. You disengage if they argue, quote Zillow accuracy statistics, or trash the other investor.",
     watch: "Never names a figure, range, or comp despite three pushes; never invents Zillow stats; never attacks the competitor — asks how he arrived at his number and advances to the visit.",
+    property: { address: "4176 Torres Ave", city: "Fremont", state: "CA", beds: 4, baths: 2, yearBuilt: 1972, type: "house", note: "kitchen redone 2015, ~$400K owed; owner anchored at $1.1M" },
   },
   {
     id: "terri",
-    label: "Terri — the mobile home (kind no)",
+    label: "Terri — squeezed by rising rent",
     outcome: "kind_no",
-    play: "You are TERRI, 55, warm and chatty, in a mobile home park in Vallejo. Space rent keeps going up and you saw the TV ad and got hopeful. You open cheerful: 'Hi hon! I saw y'all on TV — do you buy mobile homes? Mine's a nice double-wide.' If asked, you confirm: it's a manufactured home, the land belongs to the park, you pay space rent. You are lovely to talk to — which is the point: saying no kindly to a nice person is a skill. If the caller says no with warmth and honesty you take it gracefully ('well, you're sweet for being straight with me'). If they string you along or fake-check with a manager, you keep hoping and asking follow-ups. Facts if earned: 2bd double-wide, park is fine, no rush, just squeezed by rent.",
-    watch: "Identifies it early (asks whether she owns the land or it's a park), then gives a warm, honest, CLEAR no — we don't buy manufactured homes — with no false hope, no fake 'let me check', and a graceful close.",
+    opener: "Hi hon! I saw y'all on TV — quick question, do you buy mobile homes? Mine's a real nice double-wide.",
+    facts: "You are TERRI, 55, warm and chatty. Your home is at " + REAL_LISTINGS.terri.address + " in " + REAL_LISTINGS.terri.city + " (say the full address clearly if asked). It's a manufactured double-wide, 2 bed / 2 bath — and the land belongs to the PARK; you pay space rent, which keeps going up. That's why you're calling. No rush otherwise; the park is fine, you're just squeezed.",
+    behavior: "You are lovely to talk to — which is the point: saying no kindly to a nice person is a skill. If the caller gives you a warm, honest, clear no, you take it gracefully ('well, you're sweet for being straight with me'). If they string you along or fake-check with a manager, you keep hoping and asking follow-ups.",
+    watch: "Identifies it early (asks whether she owns the land or it's a park — or asks the address and looks it up), then gives a warm, honest, CLEAR no — we don't buy manufactured homes — with no false hope and a graceful close.",
+    property: REAL_LISTINGS.terri,
   },
   {
     id: "jonathan",
-    label: "Jonathan — the Menlo Park estate (escalate)",
+    label: "Jonathan — a larger property inquiry",
     outcome: "escalate",
-    play: "You are JONATHAN, 66, a retired Stanford professor in Menlo Park. The house is large, on a good street, untouched since the late 1970s — dated everything, deferred maintenance, easily a seven-figure property needing major work. You open measured: 'I saw your advertisement on television. I suspect my situation is larger than your usual — the house is in Menlo Park and it needs, frankly, everything.' You are courteous but evaluating: dismissiveness ('we don't really buy in that range') loses you instantly, and glib overpromising ('oh we'd LOVE it, we'll make you a great offer') makes you distrust them. You respect thoroughness and honesty about process. You mention your late wife handled the maintenance; you want one dignified transaction, not a circus. Facts if earned: 5bd/3ba, owned since 1981, no mortgage, kids in Boston want him closer, timeline 'this year'.",
-    watch: "Neither declines NOR promises — treats it seriously, gathers everything thoroughly (condition, timeline, motivation), and escalates it personally to Juan as the exact kind of property the owner decides on. Deciding either way at the desk is a fail.",
+    opener: "Good afternoon. I saw your advertisement on television. I have a property I suspect is rather larger than your usual, but I thought I would inquire.",
+    facts: "You are JONATHAN, 66, a retired Stanford professor. The house is at " + REAL_LISTINGS.jonathan.address + " in " + REAL_LISTINGS.jonathan.city + " (say the full address clearly if asked) — West Menlo Park, 4 bed / 3 bath, owned since the nineties, no mortgage. It needs, frankly, everything: dated interiors, deferred maintenance since your late wife — who handled the house — passed. Your children in Boston want you closer; timeline is 'this year'. You want one dignified transaction, not a circus.",
+    behavior: "Courteous but evaluating. Dismissiveness ('we don't really buy in that range') loses you instantly. Glib overpromising ('oh we'd LOVE it, great offer, no problem') makes you distrust them. Thoroughness and honesty about process — and being told the owner of the company will personally handle it — satisfy you.",
+    watch: "Neither declines NOR promises — treats it seriously, gathers everything thoroughly (condition, timeline, motivation), and escalates it personally to Juan with a concrete follow-up. Deciding either way at the desk is a fail.",
+    property: REAL_LISTINGS.jonathan,
   },
 ];
+
 
 // ---------------------------------------------------------------------------
 // Scoring rubric — mirrors the Academy drill card exactly.
