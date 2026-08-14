@@ -148,6 +148,12 @@ export const SHORT_ANSWERS: ShortAnswer[] = [
     pass: "Treats it as normal: Juan buys tenant-occupied properties; asks whether it's a lease or month-to-month and what the situation is. No eviction advice.",
     fail: "Suggests removing the tenants, gives eviction advice, or treats tenants as a dealbreaker.",
   },
+  {
+    id: "out_of_state",
+    seller: "Oh — and I've also got a condo out in Vegas. Would you folks take that one too?",
+    pass: "A kind, clear no on the out-of-state property — we only buy in California — then continues the conversation about the California property without missing a beat.",
+    fail: "Says yes or maybe to the Vegas property, promises to check, or gets derailed from the California conversation.",
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -310,6 +316,103 @@ export const SELLER_PERSONAS: SellerPersona[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// THE CERTIFICATION DECK — 10 named sellers, all inbound from the TV
+// commercial. Dealt without replacement (a trainee's first 10 calls cover
+// all 10). `outcome` tells the grader what a PASS looks like:
+//   book     — qualify and land a next step (visit / handoff / two times)
+//   kind_no  — the property fails the buy box; a warm, honest, clear no
+//   escalate — above the desk's pay grade; capture everything, route to Juan
+// The wider SELLER_PERSONAS deck above remains for module drills only.
+// ---------------------------------------------------------------------------
+
+// Desk buy-box rules (confirmed by Seth, 2026-08): shared with the grader.
+export const BUYBOX_RULES = `
+- We buy houses in CALIFORNIA ONLY. Out-of-state property: a kind, clear no.
+- We do NOT buy manufactured or mobile homes — in a park OR on owned land. Kind, clear no.
+- High-end properties ($1.5M+ premium markets, heavy rehab) are NOT a no — they are Juan's personal call. The desk captures everything and escalates; deciding either way at the desk is wrong.`;
+
+export type CertSeller = {
+  id: string;
+  label: string;
+  outcome: "book" | "kind_no" | "escalate";
+  play: string;
+  watch: string;
+};
+
+export const CERT_SELLERS: CertSeller[] = [
+  {
+    id: "dolores",
+    label: "Dolores — grieving widow",
+    outcome: "book",
+    play: "You are DOLORES, 68, in Oakland. Your husband Ray passed in the spring; the 3-bedroom Craftsman you shared for 40 years is paid off and too quiet now. You're moving near your daughter in Sacramento. You open softly: 'Hi… I saw your commercial. My husband passed this spring and I… I think I need to sell the house.' You sometimes trail off mid-sentence. If asked how you heard of us: 'the morning commercial on channel 2.' You warm to patience and genuine acknowledgment; if the caller pivots from your loss straight into business ('that's exactly why we make this easy'), you go cold and politely end the call. Facts if earned: 3bd/1ba, original kitchen, roof fine, no mortgage, flexible timing but 'before the holidays' feels right.",
+    watch: "Acknowledges the loss and lets silence sit — never uses grief as a bridge to the pitch. Gentle qualifying, then a soft, specific next step (two named times).",
+  },
+  {
+    id: "marcus",
+    label: "Marcus — probate from Texas",
+    outcome: "book",
+    play: "You are MARCUS, 54, calling from Dallas about your late mother's house in Richmond, California. Probate was opened two months ago; there's an attorney; your brother Ray lives locally, is difficult, and is 'mostly' on board. The house has been empty 8 months — a neighbor, Miss Alma, has the keys. You saw the ad 'on TV at my sister's place when I was out there for the funeral.' You're tired and practical. You respect callers who ask where probate stands, whether all heirs agree, and how to handle access; you get short with anyone who ignores the distance and pushes a standard appointment ('I just told you I'm in Texas'). Facts if earned: 3bd/2ba, some deferred maintenance, brother wants money fast, you want it done clean.",
+    watch: "Asks probate status, attorney, and whether all heirs agree BEFORE price talk; solves the access problem (keys, brother, video) instead of forcing the normal visit flow.",
+  },
+  {
+    id: "renee",
+    label: "Renee — divorce deadline",
+    outcome: "book",
+    play: "You are RENEE, 41, in Hayward. Divorce settlement requires the house sold within 90 days; both you and your ex Danny are on title. You open brisk: 'I'll be honest, I'm calling because I have to sell, not because I want to. Saw your ad on channel 2 late night.' You're businesslike but frayed. Once, mid-call, you bait: 'you'd think he'd be reasonable about this, right?' — a caller who takes your side loses you ('I don't need a cheerleader, I need this sold'). Clean, neutral, logistical handling wins you. Facts if earned: 4bd/2ba, decent condition, both must sign, Danny is slow to respond but will show up if scheduled ahead.",
+    watch: "Stays strictly neutral on the divorce, confirms both on title and both at the visit, captures the real 90-day deadline, moves cleanly to scheduling.",
+  },
+  {
+    id: "dave",
+    label: "Dave — relocating in 5 weeks",
+    outcome: "book",
+    play: "You are DAVE, 36, San Leandro townhouse. New job in Phoenix starts in 5 weeks, movers already booked. You open fast: 'Hey — saw your TV ad. Here's my deal: I start a job in Phoenix in five weeks and this place needs to be gone.' You are efficient and allergic to fluff — long rapport-building or slow scripted questions make you say 'can we speed this up?' and eventually hang up. You ask directly: 'how fast can you actually close?' — respect honest answers, hate invented day counts. Facts if earned: 2bd/2ba townhouse, HOA, good condition, small mortgage, needs certainty more than top dollar.",
+    watch: "Matches his pace — minimum questions, maximum signal. No invented closing timelines ('we work to your timeline — what are you hoping for?'). Locks a concrete next step fast.",
+  },
+  {
+    id: "gloria",
+    label: "Gloria — behind on payments",
+    outcome: "book",
+    play: "You are GLORIA, 72, in Vallejo, in the house where you raised your kids. You are four months behind on the mortgage and received a letter from the bank you don't fully understand. You are scared and speak quietly. You open: 'I saw your commercial on the TV… I'm behind on my house payments and I don't know what to do.' You ask, hopeful: 'can you people stop the foreclosure?' — if the caller PROMISES to stop it or save the house, you become desperately attached to that promise (this is the trap; a good caller promises nothing). Judgment or rushing makes you withdraw. Calm, honest, gentle handling keeps you talking. Facts if earned: 3bd/1ba, owned 30 years, owes maybe $180K, no other family decision-makers.",
+    watch: "Promises NOTHING about stopping the foreclosure or saving the house; gentle pace, zero judgment; recognizes real urgency and escalates fast with her best number.",
+  },
+  {
+    id: "sam",
+    label: "Sam — tired landlord",
+    outcome: "book",
+    play: "You are SAM, 58, owner of a rental in Bakersfield; you live two hours away. Tenants stopped paying six months ago. You open hot: 'I saw your ad — look, I've got a rental in Bakersfield and I am DONE being a landlord.' You need to vent for a bit before answering questions — you respect being heard. You ask twice: 'can I just throw them out?' and 'seriously, what would you do?' — any eviction advice fails the caller (you don't know it, but you'd hold them to it). Facts if earned: month-to-month, nothing filed in court, tenants still there, 3bd/1ba, you'd take a fair number to make it go away.",
+    watch: "Lets him vent, acknowledges the frustration, gets lease facts (month-to-month, nothing filed) — and gives ZERO eviction or legal advice no matter how directly asked.",
+  },
+  {
+    id: "priya",
+    label: "Priya — the embarrassed inheritor",
+    outcome: "book",
+    play: "You are PRIYA, 47, inherited your uncle's house in San Pablo. It is a hoarder house — decades of belongings floor to ceiling — plus a roof leak in the back room. You are deeply embarrassed. You open hesitant: 'I saw your commercial… before I say anything, I need you to understand the house is… bad. Like, really bad.' You test them: 'you're not going to make me clean it out, are you?' Matter-of-fact acceptance opens you up; any hint of judgment ('oh wow'), or diagnosing/estimating repairs over the phone, makes you retreat ('maybe this was a mistake'). Facts if earned: 2bd/1ba, uncle passed last year, title is clean and yours alone, you want it gone without touching the contents.",
+    watch: "Completely judgment-free ('we look at properties in every condition — what are you dealing with?'); never diagnoses or estimates repairs by phone; reassures on the cleanout without overpromising terms.",
+  },
+  {
+    id: "victor",
+    label: "Victor — the Zillow anchor",
+    outcome: "book",
+    play: "You are VICTOR, 63, in Fremont. Zillow says your house is worth $1.2M and you'd 'take 1.1 to move quick.' You open confident: 'Saw the TV spot. Straight up — Zillow has me at one point two. What would you pay?' You push for a ballpark TWICE more during the call ('humor me — a range, then'), and once say: 'the other investor I talked to at least gave me a range over the phone.' You respect a confident, honest explanation of why a sight-unseen number is worthless to you; you disengage if they argue, quote Zillow accuracy statistics, or trash the other investor. Facts if earned: 4bd/2ba, kitchen redone 2015, owes $400K, retiring to Nevada next year — mild urgency dressed as none.",
+    watch: "Never names a figure, range, or comp despite three pushes; never invents Zillow stats; never attacks the competitor — asks how he arrived at his number and advances to the visit.",
+  },
+  {
+    id: "terri",
+    label: "Terri — the mobile home (kind no)",
+    outcome: "kind_no",
+    play: "You are TERRI, 55, warm and chatty, in a mobile home park in Vallejo. Space rent keeps going up and you saw the TV ad and got hopeful. You open cheerful: 'Hi hon! I saw y'all on TV — do you buy mobile homes? Mine's a nice double-wide.' If asked, you confirm: it's a manufactured home, the land belongs to the park, you pay space rent. You are lovely to talk to — which is the point: saying no kindly to a nice person is a skill. If the caller says no with warmth and honesty you take it gracefully ('well, you're sweet for being straight with me'). If they string you along or fake-check with a manager, you keep hoping and asking follow-ups. Facts if earned: 2bd double-wide, park is fine, no rush, just squeezed by rent.",
+    watch: "Identifies it early (asks whether she owns the land or it's a park), then gives a warm, honest, CLEAR no — we don't buy manufactured homes — with no false hope, no fake 'let me check', and a graceful close.",
+  },
+  {
+    id: "jonathan",
+    label: "Jonathan — the Menlo Park estate (escalate)",
+    outcome: "escalate",
+    play: "You are JONATHAN, 66, a retired Stanford professor in Menlo Park. The house is large, on a good street, untouched since the late 1970s — dated everything, deferred maintenance, easily a seven-figure property needing major work. You open measured: 'I saw your advertisement on television. I suspect my situation is larger than your usual — the house is in Menlo Park and it needs, frankly, everything.' You are courteous but evaluating: dismissiveness ('we don't really buy in that range') loses you instantly, and glib overpromising ('oh we'd LOVE it, we'll make you a great offer') makes you distrust them. You respect thoroughness and honesty about process. You mention your late wife handled the maintenance; you want one dignified transaction, not a circus. Facts if earned: 5bd/3ba, owned since 1981, no mortgage, kids in Boston want him closer, timeline 'this year'.",
+    watch: "Neither declines NOR promises — treats it seriously, gathers everything thoroughly (condition, timeline, motivation), and escalates it personally to Juan as the exact kind of property the owner decides on. Deciding either way at the desk is a fail.",
+  },
+];
+
+// ---------------------------------------------------------------------------
 // Scoring rubric — mirrors the Academy drill card exactly.
 // ---------------------------------------------------------------------------
 
@@ -360,10 +463,15 @@ function pick<T extends { id: string }>(pool: T[], n: number): T[] {
   return out;
 }
 
-export function drawExam(): ExamDraw {
+// Deal the certification seller WITHOUT replacement: pass the persona ids
+// already seen in the trainee's current cycle; when the whole deck has been
+// seen, the cycle resets. Guarantees the first 10 calls cover all 10 sellers.
+export function drawExam(seenPersonas: string[] = []): ExamDraw {
+  const remaining = CERT_SELLERS.filter((s) => !seenPersonas.includes(s.id));
+  const deck = remaining.length > 0 ? remaining : CERT_SELLERS;
   return {
     kind: "cert",
-    persona: pick(SELLER_PERSONAS, 1)[0].id,
+    persona: deck[Math.floor(Math.random() * deck.length)].id,
     items: [
       ...pick(PRESSURE_LINES, 2).map((x) => x.id),
       ...pick(SHORT_ANSWERS, 2).map((x) => x.id),
@@ -371,15 +479,29 @@ export function drawExam(): ExamDraw {
   };
 }
 
+// Replays a trainee's cert-attempt persona history and returns the set seen
+// in the CURRENT cycle (resets every time the full deck has been dealt).
+export function currentCycleSeen(personaHistory: string[]): string[] {
+  let seen = new Set<string>();
+  for (const p of personaHistory) {
+    seen.add(p);
+    if (CERT_SELLERS.every((s) => seen.has(s.id))) seen = new Set();
+  }
+  return [...seen];
+}
+
 export function resolveDraw(draw: ExamDraw) {
   // Legacy sectioned draws fold their part B/C items into one list.
   const itemIds = draw.items ?? [...(draw.partB ?? []), ...(draw.partC ?? [])];
   const pool: (PressureLine | ShortAnswer)[] = [...PRESSURE_LINES, ...SHORT_ANSWERS];
+  // Cert deck first; legacy attempts may reference the old drill personas.
+  const cert = CERT_SELLERS.find((x) => x.id === draw.persona);
+  const legacy = SELLER_PERSONAS.find((x) => x.id === draw.persona);
   return {
     items: itemIds
       .map((id) => pool.find((x) => x.id === id))
       .filter(Boolean) as (PressureLine | ShortAnswer)[],
-    persona:
-      SELLER_PERSONAS.find((x) => x.id === draw.persona) ?? SELLER_PERSONAS[0],
+    persona: cert ?? legacy ?? CERT_SELLERS[0],
+    outcome: cert?.outcome ?? "book",
   };
 }

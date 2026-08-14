@@ -20,10 +20,21 @@ certification test, plus a sales practice mode and the courseware:
 
 2. **📞 The certification call** — ONE realistic inbound call, ~5 minutes,
    auto-graded the moment it ends. The line rings, the trainee answers with
-   the mandatory open, and the AI plays a seller dealt from the 24-persona
-   deck — which also *secretly weaves in* 2 randomly drawn pressure lines
-   and 2 seller questions at natural moments. No examiner, no sections:
-   every skill is tested inside the call where it actually lives.
+   the mandatory open, and the AI plays one of **10 named situational
+   sellers** (all "saw the TV commercial"): Dolores (grieving), Marcus
+   (probate from Texas), Renee (divorce deadline), Dave (relocating), Gloria
+   (behind on payments), Sam (tired landlord), Priya (embarrassed
+   inheritor), Victor (Zillow anchor), Terri (mobile home — the correct
+   outcome is a KIND, CLEAR NO per the buy box), and Jonathan (Menlo Park
+   estate — the correct outcome is CAPTURE AND ESCALATE to Juan, never a
+   desk decision). Sellers are dealt **without replacement**, so the first
+   10 calls cover all 10. Each call also *secretly weaves in* 2 pressure
+   lines and 2 seller questions at natural moments. No examiner, no
+   sections: every skill is tested inside the call where it actually lives.
+
+   Buy-box rules baked into grading: California only; no manufactured or
+   mobile homes (park or owned land); high-end heavy-rehab properties get
+   escalated to Juan, not decided at the desk.
 
    Grading is deterministic: any of the 7 **hard fails** (quoting a price,
    promising an on-the-spot offer, stating own location, discussing a

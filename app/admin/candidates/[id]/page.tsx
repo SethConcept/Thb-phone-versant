@@ -10,6 +10,7 @@ import {
   PRESSURE_LINES,
   SHORT_ANSWERS,
   SELLER_PERSONAS,
+  CERT_SELLERS,
 } from "@/lib/academy";
 import { DRILLS, MODEL_ITEMS, ENDING_ITEMS } from "@/lib/drills";
 import { LEARN_MODULES } from "@/lib/modules";
@@ -56,7 +57,10 @@ const ALL_ITEMS = [...PRESSURE_LINES, ...SHORT_ANSWERS, ...MODEL_ITEMS, ...ENDIN
 const itemLabel = (id: string) => ALL_ITEMS.find((x) => x.id === id)?.seller ?? id;
 
 const personaLabel = (id?: string) =>
-  SELLER_PERSONAS.find((x) => x.id === id)?.label ?? id ?? "—";
+  CERT_SELLERS.find((x) => x.id === id)?.label ??
+  SELLER_PERSONAS.find((x) => x.id === id)?.label ??
+  id ??
+  "—";
 
 const hardFailLabel = (id: string) =>
   HARD_FAILS.find((x) => x.id === id)?.label ?? id;

@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { LIVE_MODEL } from "@/lib/models";
 import { johnSystemPrompt } from "@/lib/sales-prompts";
 import { versantSystemPrompt } from "@/lib/versant-prompts";
-import { drawExam } from "@/lib/academy";
+import { drawExam, currentCycleSeen } from "@/lib/academy";
 import { drawDrill, DRILLS } from "@/lib/drills";
 import { drillSystemPrompt } from "@/lib/drill-prompts";
 import { getModule } from "@/lib/modules";
@@ -86,7 +86,19 @@ export async function POST(req: Request) {
           { status: 409 }
         );
     }
-    examMeta = drawExam();
+    // Deal the seller without replacement: exclude personas already seen in
+    // the trainee's current cycle so the first 10 calls cover all 10 sellers.
+    const { data: past } = await db
+      .from("interviews")
+      .select("exam_meta, started_at")
+      .eq("candidate_id", candidate.id)
+      .not("exam_meta", "is", null)
+      .order("started_at", { ascending: true });
+    const personaHistory = (past ?? [])
+      .map((r: any) => r.exam_meta)
+      .filter((m: any) => m && m.kind !== "drill" && m.persona)
+      .map((m: any) => m.persona as string);
+    examMeta = drawExam(currentCycleSeen(personaHistory));
   }
 
   const { data: interview, error } = await db

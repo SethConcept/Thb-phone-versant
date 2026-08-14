@@ -39,12 +39,16 @@ ADMIN_UNLOCK_CODE preview cookie.
 ## The certification call (one realistic inbound call, ~5 min)
 
 No examiner, no sections. The line rings; the trainee answers with the
-mandatory open; the AI plays a seller dealt from the 24-persona deck. The
-draw also embeds 2 pressure lines (pool of 9) + 2 seller questions (pool
-of 9) that the persona weaves into the conversation naturally — the
-trainee never sees them labeled. The call runs to a real ending (handoff,
-two named times, polite close, or the seller walks). Auto-graded on
-completion; each pass counts toward the gate.
+mandatory open; the AI plays one of the 10 named situational sellers in
+`CERT_SELLERS` (all inbound from TV), dealt WITHOUT replacement so the
+first 10 calls cover the whole deck. Each seller carries an expected
+outcome: book (8 sellers), kind_no (Terri — mobile home; buy box:
+California only, no manufactured homes), or escalate (Jonathan — Menlo
+Park estate; Juan's personal call, never the desk's). The draw also embeds
+2 pressure lines + 2 seller questions (incl. the out-of-state Vegas condo
+test) woven in naturally. The call runs to a real ending. Auto-graded on
+completion; each pass counts toward the gate. The wider 24-persona deck
+remains for module drills only.
 
 Every attempt stores its draw (`interviews.exam_meta`, kind `cert`) so the
 grader scores exactly what was dealt, and every call is different.
