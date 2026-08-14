@@ -18,26 +18,22 @@ certification test, plus a sales practice mode and the courseware:
    device gets a 30-day preview cookie unlocking everything on every
    trainee link, without touching trainee records.
 
-2. **🎧 Versant certification test** — a four-part spoken test administered
-   and graded by AI, modeled on the Versant format but scored on THB call
-   rules instead of English fluency:
-   - **Part A** — answer an incoming call with the mandatory open (name,
-     recording disclosure, how-did-you-hear).
-   - **Part B** — three randomly drawn seller *pressure lines* engineered to
-     bait a banned response (price fishing, Zillow, mailer amounts…).
-   - **Part C** — three randomly drawn common seller questions (fees, speed,
-     how offers work…).
-   - **Part D** — a full call against one of 24 seller personas, open to
-     agreed next step.
+2. **📞 The certification call** — ONE realistic inbound call, ~5 minutes,
+   auto-graded the moment it ends. The line rings, the trainee answers with
+   the mandatory open, and the AI plays a seller dealt from the 24-persona
+   deck — which also *secretly weaves in* 2 randomly drawn pressure lines
+   and 2 seller questions at natural moments. No examiner, no sections:
+   every skill is tested inside the call where it actually lives.
 
-   Grading is deterministic where it matters: any of the 7 **hard fails**
-   (quoting a price, promising an on-the-spot offer, stating own location,
-   discussing a mailer amount, inventing stats, manufacturing urgency,
-   "the offer is your check") = automatic FAIL with the offending line
-   quoted back. Missing the recording disclosure = automatic FAIL. Otherwise
-   Part D needs 8/10 Academy criteria and at most one miss across B+C.
+   Grading is deterministic: any of the 7 **hard fails** (quoting a price,
+   promising an on-the-spot offer, stating own location, discussing a
+   mailer amount, inventing stats, manufacturing urgency, "the offer is
+   your check") = automatic FAIL with the offending line quoted back.
+   Missing the recording disclosure or the how-did-you-hear question =
+   automatic FAIL. Otherwise: open delivery ≥ 3/5, at most one miss across
+   the embedded lines, and 8/10 Academy call criteria.
 
-   **Certification gate** (tracked per trainee in admin): 12 passed tests
+   **Certification gate** (tracked per trainee in admin): 12 passed calls
    across at least 6 different seller personas.
 
 3. **📞 Sales practice call** — the AI plays "John", a homeowner lead; the
@@ -81,10 +77,11 @@ separate from the THB HR voice-screen stack. Nothing here touches it.
 Admin adds a trainee at `/admin` (Versant or sales practice) → copies the
 generated link (training links go to `/learn/<token>`) → trainee works
 through the module path: read → quiz → voice drill (consent logged, CA
-two-party; drills auto-graded) → all 8 done unlocks `/interview/<token>`,
-the full certification test → admin clicks **Score with AI** on tests →
-structured verdict → module progress and the certification gate show on
-the trainee's admin page.
+two-party) → all 8 done unlocks `/interview/<token>`, the certification
+calls. Drills AND certification calls are auto-graded on completion —
+structured verdicts, module progress, and the certification gate all show
+on the trainee's admin page (Score with AI remains for re-grades and
+sales-practice calls).
 
 Versant links never expire and have no attempt cap; each drill and test
 draws fresh random material. Sales practice links allow 3 attempts.
@@ -101,8 +98,9 @@ draws fresh random material. Sales practice links allow 3 attempts.
 - [ ] Quiz grades, stores best score, and unlocks the drill on pass
 - [ ] Drill auto-grades on completion and flips the module gate
 - [ ] Locked modules/test actually block (and `skip_modules` bypasses)
-- [ ] Examiner announces "Part A…D" and the screen tracker follows
-- [ ] "TEST/CALL/DRILL COMPLETE" markers auto-end the session
+- [ ] Certification call rings, trainee speaks first, seller stays in character
+- [ ] Embedded pressure lines/questions actually get woven into the call
+- [ ] "CALL/DRILL COMPLETE" markers auto-end the session
 - [ ] Audio .webm uploads and plays back in admin
 - [ ] Scoring returns valid JSON; hard fails quote the trainee's words
 - [ ] A run with a deliberate price quote comes back FAIL

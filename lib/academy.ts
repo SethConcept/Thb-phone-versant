@@ -340,11 +340,15 @@ export const HARD_FAILS = [
 // Random draw helpers (server-side)
 // ---------------------------------------------------------------------------
 
+// The certification call: one realistic inbound call — a dealt persona,
+// plus a few pressure lines / seller questions the persona weaves into the
+// conversation naturally (the trainee never sees them labeled).
 export type ExamDraw = {
-  kind: "versant";
-  partB: string[]; // PressureLine ids
-  partC: string[]; // ShortAnswer ids
+  kind: "cert" | "versant"; // 'versant' = legacy sectioned-test draws
   persona: string; // SellerPersona id
+  items?: string[]; // cert: embedded item ids (pressure lines + questions)
+  partB?: string[]; // legacy
+  partC?: string[]; // legacy
 };
 
 function pick<T extends { id: string }>(pool: T[], n: number): T[] {
@@ -358,21 +362,23 @@ function pick<T extends { id: string }>(pool: T[], n: number): T[] {
 
 export function drawExam(): ExamDraw {
   return {
-    kind: "versant",
-    partB: pick(PRESSURE_LINES, 3).map((x) => x.id),
-    partC: pick(SHORT_ANSWERS, 3).map((x) => x.id),
+    kind: "cert",
     persona: pick(SELLER_PERSONAS, 1)[0].id,
+    items: [
+      ...pick(PRESSURE_LINES, 2).map((x) => x.id),
+      ...pick(SHORT_ANSWERS, 2).map((x) => x.id),
+    ],
   };
 }
 
 export function resolveDraw(draw: ExamDraw) {
+  // Legacy sectioned draws fold their part B/C items into one list.
+  const itemIds = draw.items ?? [...(draw.partB ?? []), ...(draw.partC ?? [])];
+  const pool: (PressureLine | ShortAnswer)[] = [...PRESSURE_LINES, ...SHORT_ANSWERS];
   return {
-    partB: draw.partB
-      .map((id) => PRESSURE_LINES.find((x) => x.id === id))
-      .filter(Boolean) as PressureLine[],
-    partC: draw.partC
-      .map((id) => SHORT_ANSWERS.find((x) => x.id === id))
-      .filter(Boolean) as ShortAnswer[],
+    items: itemIds
+      .map((id) => pool.find((x) => x.id === id))
+      .filter(Boolean) as (PressureLine | ShortAnswer)[],
     persona:
       SELLER_PERSONAS.find((x) => x.id === draw.persona) ?? SELLER_PERSONAS[0],
   };

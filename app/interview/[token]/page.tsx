@@ -61,8 +61,8 @@ export default async function InterviewPage({
     if (!state.allComplete)
       return (
         <Shell>
-          <h1>🔒 Certification test locked</h1>
-          <p>Finish all eight modules in your learning path — content, quizzes, and voice drills — and the test unlocks automatically.</p>
+          <h1>🔒 Certification calls locked</h1>
+          <p>Finish all eight modules in your learning path — content, quizzes, and voice drills — and the certification calls unlock automatically.</p>
           <Link className="btn" href={`/learn/${token}`}>Go to my learning path</Link>
         </Shell>
       );

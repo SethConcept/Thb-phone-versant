@@ -82,7 +82,7 @@ export async function POST(req: Request) {
       const state = pathState(rows ?? []);
       if (!state.allComplete)
         return NextResponse.json(
-          { error: "Finish all modules in the learning path to unlock the certification test" },
+          { error: "Finish all modules in the learning path to unlock certification calls" },
           { status: 409 }
         );
     }

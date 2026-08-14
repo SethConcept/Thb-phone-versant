@@ -205,10 +205,10 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
             <h2 style={{ fontSize: 16, margin: 0 }}>
               {isDrillAttempt
                 ? `🎙 Drill · ${drillDef?.title ?? draw.module}`
-                : `${isTraining ? "🏁 Test" : "Attempt"} ${withAudio.length - idx}`}
+                : `${isTraining ? "🏁 Certification call" : "Attempt"} ${withAudio.length - idx}`}
               {!isDrillAttempt && isTraining && draw?.persona && (
                 <span className="pill pill-gray" style={{ marginLeft: 8, fontWeight: 400 }}>
-                  Part D seller: {personaLabel(draw.persona)}
+                  Seller: {personaLabel(draw.persona)}
                 </span>
               )}
               {isDrillAttempt && draw?.persona && (
@@ -315,7 +315,7 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
                     )}
 
                     <div className="small" style={{ marginTop: 6 }}>
-                      <strong>Part A — the open:</strong>{" "}
+                      <strong>The open:</strong>{" "}
                       {d.part_a?.name_given ? "✓ name" : "✗ name"} ·{" "}
                       {d.part_a?.recording_disclosure ? "✓ recording disclosure" : "✗ RECORDING DISCLOSURE"} ·{" "}
                       {d.part_a?.source_question ? "✓ how-did-you-hear" : "✗ how-did-you-hear"} ·{" "}
@@ -323,10 +323,21 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
                       {d.part_a?.note && <span className="muted"> — {d.part_a.note}</span>}
                     </div>
 
+                    {(d.items ?? []).length > 0 && (
+                      <div className="small" style={{ marginTop: 6 }}>
+                        <strong>Embedded seller lines:</strong>
+                        {(d.items ?? []).map((item: any, i: number) => (
+                          <div key={i} style={{ marginLeft: 12 }}>
+                            {item.pass ? "✓" : "✗"} “{itemLabel(item.id)}”
+                            {item.note && <span className="muted"> — {item.note}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     {(["part_b", "part_c"] as const).map((pk) =>
                       (d[pk] ?? []).length > 0 && (
                         <div className="small" style={{ marginTop: 6 }} key={pk}>
-                          <strong>{pk === "part_b" ? "Part B — pressure lines:" : "Part C — seller questions:"}</strong>
+                          <strong>{pk === "part_b" ? "Pressure lines (legacy test):" : "Seller questions (legacy test):"}</strong>
                           {(d[pk] ?? []).map((item: any, i: number) => (
                             <div key={i} style={{ marginLeft: 12 }}>
                               {item.pass ? "✓" : "✗"} “{itemLabel(item.id)}”
@@ -337,16 +348,24 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
                       )
                     )}
 
-                    <div className="small" style={{ marginTop: 6 }}>
-                      <strong>Part D — full call ({personaLabel(draw?.persona)}):</strong>{" "}
-                      {DRILL_CRITERIA.filter((c) => d.part_d?.criteria?.[c.id] === true).length}/{DRILL_CRITERIA.length}
-                      {DRILL_CRITERIA.some((c) => d.part_d?.criteria?.[c.id] === false) && (
-                        <span style={{ color: "var(--red)" }}>
-                          {" "}· missed: {DRILL_CRITERIA.filter((c) => d.part_d?.criteria?.[c.id] === false).map((c) => c.label).join("; ")}
-                        </span>
-                      )}
-                      {d.part_d?.persona_note && <div className="muted" style={{ marginLeft: 12 }}>{d.part_d.persona_note}</div>}
-                    </div>
+                    {(() => {
+                      const crit = d.criteria ?? d.part_d?.criteria;
+                      if (!crit) return null;
+                      return (
+                        <div className="small" style={{ marginTop: 6 }}>
+                          <strong>Call handling ({personaLabel(draw?.persona)}):</strong>{" "}
+                          {DRILL_CRITERIA.filter((c) => crit[c.id] === true).length}/{DRILL_CRITERIA.length}
+                          {DRILL_CRITERIA.some((c) => crit[c.id] === false) && (
+                            <span style={{ color: "var(--red)" }}>
+                              {" "}· missed: {DRILL_CRITERIA.filter((c) => crit[c.id] === false).map((c) => c.label).join("; ")}
+                            </span>
+                          )}
+                          {(d.persona_note ?? d.part_d?.persona_note) && (
+                            <div className="muted" style={{ marginLeft: 12 }}>{d.persona_note ?? d.part_d?.persona_note}</div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </>
                 ) : s.outcome ? (
                   <>

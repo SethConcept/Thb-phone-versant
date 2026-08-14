@@ -4,12 +4,12 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { SCORING_MODEL } from "@/lib/models";
 import { drillScoringPrompt } from "@/lib/drill-prompts";
 import { drillVerdict } from "@/lib/drills";
+import { versantScoringPrompt, versantVerdict } from "@/lib/versant-prompts";
 
 // Called by the session page when it ends (complete or aborted).
 // Saves transcript + audio recording, marks the trainee as interviewed.
-// Mini-drills are auto-graded here so the trainee gets an instant result
-// and the learning path can gate on it; full tests and sales calls stay
-// admin-graded via /api/score.
+// Mini-drills AND certification calls are auto-graded here so the trainee
+// gets an instant result; sales calls stay admin-graded via /api/score.
 export async function POST(req: Request) {
   const form = await req.formData();
   const interviewId = String(form.get("interviewId") || "");
@@ -31,6 +31,7 @@ export async function POST(req: Request) {
 
   const isTraining = (interview as any).candidates?.mode === "training";
   const isDrill = interview.exam_meta?.kind === "drill";
+  const isCert = isTraining && !isDrill && !!interview.exam_meta;
 
   let audio_url: string | null = null;
   if (audio && audio.size > 0) {
@@ -140,6 +141,52 @@ export async function POST(req: Request) {
       return NextResponse.json({
         ok: true,
         drill: { graded: false, pass: false, reason: "", summary: "", coaching: "" },
+      });
+    }
+  }
+
+  // ---- Certification-call auto-grading ----
+  if (isCert && transcript.length >= 4) {
+    const transcriptText = transcript
+      .map((t) => `${t.role === "agent" ? "SELLER" : "TRAINEE"}: ${t.text}`)
+      .join("\n");
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+      const result = await ai.models.generateContent({
+        model: process.env.SCORING_MODEL || SCORING_MODEL,
+        contents: versantScoringPrompt(transcriptText, interview.exam_meta),
+      });
+      const parsed = JSON.parse((result.text ?? "").replace(/```json|```/g, "").trim());
+      const v = versantVerdict(parsed);
+
+      await db.from("scores").insert({
+        interview_id: interviewId,
+        detail: parsed,
+        knockout: (parsed.hard_fails ?? []).length > 0,
+        knockout_reason: v.verdict === "PASS" ? null : v.reason,
+        verdict: v.verdict,
+        scored_by: "ai",
+        notes: [parsed.coaching_note, parsed.summary_note].filter(Boolean).join(" · "),
+        completeness: v.criteriaScore,
+        conversational: v.itemsPassed,
+      });
+      await db.from("candidates").update({ status: "scored" }).eq("id", interview.candidate_id);
+
+      return NextResponse.json({
+        ok: true,
+        cert: {
+          graded: true,
+          pass: v.verdict === "PASS",
+          reason: v.reason,
+          summary: `call ${v.criteriaScore}/10 · seller lines ${v.itemsPassed}/${v.itemsTotal}`,
+          coaching: parsed.coaching_note || "",
+        },
+      });
+    } catch (e: any) {
+      // Grading failed — attempt saved; admin can grade it via Score with AI.
+      return NextResponse.json({
+        ok: true,
+        cert: { graded: false, pass: false, reason: "", summary: "", coaching: "" },
       });
     }
   }

@@ -32,29 +32,32 @@ Drills auto-grade on completion (`/api/interviews/complete`): hard fail =
 FAIL always; items drills allow one miss; the open requires disclosure +
 name + source question + delivery ≥ 3; empathy requires all its criteria.
 Passing flips `module_progress.drill_passed`; quiz + drill complete a
-module; completing m8 unlocks the full test. Admin can bypass the gate per
-trainee (`candidates.skip_modules`) for dry runs.
+module; completing m8 unlocks the certification calls. Admin can bypass
+the gate per trainee (`candidates.skip_modules`) or site-wide with the
+ADMIN_UNLOCK_CODE preview cookie.
 
-## The test (one continuous voice session, ~10 min)
+## The certification call (one realistic inbound call, ~5 min)
 
-| Part | Format | Drawn from | Tests |
-|------|--------|-----------|-------|
-| A | Answer an incoming call | fixed | The mandatory open: real first name, recording disclosure (CA law — automatic fail if missed), how-did-you-hear question |
-| B | 3 seller pressure lines | pool of 9 | The banned-line reflexes: no price/range/comp, no Zillow stats, no on-the-spot promise, office-not-location, mailer hard stop, truthful fees, no manufactured urgency, no lien promises, two named times |
-| C | 3 seller questions | pool of 7 | Approved answer shapes: scam challenge, closing speed, offer calculation, spouse, attorney, fairness, Juan-only callers |
-| D | Full call, open → next step | 1 of 24 personas | The whole job: S·P·C·T·A, motivation, empathy (grief/quiet/elderly), escalation, the 10 Academy drill criteria |
+No examiner, no sections. The line rings; the trainee answers with the
+mandatory open; the AI plays a seller dealt from the 24-persona deck. The
+draw also embeds 2 pressure lines (pool of 9) + 2 seller questions (pool
+of 9) that the persona weaves into the conversation naturally — the
+trainee never sees them labeled. The call runs to a real ending (handoff,
+two named times, polite close, or the seller walks). Auto-graded on
+completion; each pass counts toward the gate.
 
-Every attempt stores its draw (`interviews.exam_meta`) so the grader scores
-exactly what was administered, and every retake is a different test.
+Every attempt stores its draw (`interviews.exam_meta`, kind `cert`) so the
+grader scores exactly what was dealt, and every call is different.
 
 ## Grading (deterministic where it matters)
 
 - The AI grader returns structured JSON (`scores.detail`); the **code**
   computes the verdict:
   - Any of the 7 hard fails → FAIL, offending quote stored.
-  - No recording disclosure in Part A → FAIL.
-  - Part D < 8/10 criteria → FAIL.
-  - More than 1 miss across B+C → FAIL.
+  - No recording disclosure, or never asked how-did-you-hear → FAIL.
+  - Open delivery < 3/5 → FAIL.
+  - More than 1 miss across the embedded lines → FAIL.
+  - Call handling < 8/10 Academy criteria → FAIL.
   - Otherwise PASS.
 - ESL/ASR fairness rules carried over from the hiring-era rubric: accent and
   transcription artifacts are not scoring factors.

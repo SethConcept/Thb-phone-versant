@@ -4,8 +4,8 @@
 // consent -> mic check -> live voice session with Gemini -> done.
 //
 // Three modes:
-//   training — the full Versant certification test (examiner + seller AI,
-//              four parts; the screen tracks "Part A/B/C/D" announcements)
+//   training — the certification call: one realistic inbound seller call
+//              (dealt persona + embedded lines), auto-graded on completion
 //   drill    — a 2-4 minute module mini-drill, auto-graded on completion
 //   sales    — practice call vs "John" with the script on screen
 //
@@ -32,13 +32,6 @@ const END_MARKERS = ["TEST COMPLETE", "CALL COMPLETE", "DRILL COMPLETE"];
 const STEP_OF: Record<Stage, number> = {
   consent: 1, miccheck: 2, connecting: 3, live: 3, uploading: 4, done: 4, error: 1,
 };
-
-const PARTS = [
-  { id: "A", hint: "The phone rings — answer it with your full open." },
-  { id: "B", hint: "Seller pressure lines — respond exactly as you would live." },
-  { id: "C", hint: "Quick seller questions — answer each one." },
-  { id: "D", hint: "Full call, start to finish — open, qualify, land a next step." },
-];
 
 // Module-level so React treats it as a stable component — defining it inside
 // InterviewClient caused a full remount (and fade-in restart) on every
@@ -85,8 +78,8 @@ export default function InterviewClient({
   const [stage, setStage] = useState<Stage>("consent");
   const [error, setError] = useState("");
   const [agentSpeaking, setAgentSpeaking] = useState(false);
-  const [partIdx, setPartIdx] = useState(-1); // -1 = intro, 0..3 = parts A-D
   const [drillResult, setDrillResult] = useState<DrillResult | null>(null);
+  const [certResult, setCertResult] = useState<DrillResult | null>(null);
   const [notes, setNotes] = useState("");
   const notesRef = useRef("");
   const [micLevel, setMicLevel] = useState(0);
@@ -224,18 +217,6 @@ export default function InterviewClient({
         currentCandidate = "";
       };
 
-      // The examiner announces "Part A." … "Part D." — track them so the
-      // screen shows where the trainee is in the test.
-      const trackParts = (agentText: string) => {
-        const up = agentText.toUpperCase();
-        for (let i = PARTS.length - 1; i >= 0; i--) {
-          if (up.includes(`PART ${PARTS[i].id}`)) {
-            setPartIdx((prev) => Math.max(prev, i));
-            return;
-          }
-        }
-      };
-
       const session = await ai.live.connect({
         model,
         config: {
@@ -262,7 +243,6 @@ export default function InterviewClient({
             if (sc.turnComplete) {
               const upperAgent = currentAgent.toUpperCase();
               const agentSaidComplete = END_MARKERS.some((m) => upperAgent.includes(m));
-              if (isTraining) trackParts(currentAgent);
               flushTurnsRef.current();
               // agent signals the scripted end of the session
               if (agentSaidComplete) {
@@ -362,6 +342,7 @@ export default function InterviewClient({
       const res = await fetch("/api/interviews/complete", { method: "POST", body: form });
       const data = await res.json().catch(() => null);
       if (data?.drill) setDrillResult(data.drill);
+      if (data?.cert) setCertResult(data.cert);
     } catch {}
     setStage("done");
   }
@@ -388,16 +369,10 @@ export default function InterviewClient({
         ) : isTraining ? (
           <>
             <p>
-              Hi {candidateName}! This is your Versant-style certification test — <strong>four parts, about ten minutes</strong>, all spoken. An AI examiner runs the test and plays the sellers:
+              Hi {candidateName}! This is a certification call — <strong>one real inbound call, about five minutes</strong>. Your line rings, a seller is on it. Answer the phone the way every call must be answered and handle it start to finish, all the way to a next step.
             </p>
-            <ol style={{ textAlign: "left", margin: "10px auto", maxWidth: 460 }}>
-              <li><strong>Part A</strong> — answer an incoming call with your open.</li>
-              <li><strong>Part B</strong> — respond to three seller pressure lines.</li>
-              <li><strong>Part C</strong> — answer three common seller questions.</li>
-              <li><strong>Part D</strong> — a full call with a seller, start to finish.</li>
-            </ol>
             <p className="small muted" style={{ marginTop: 0 }}>
-              Closed book — no script on screen, just like a real call.
+              You won&apos;t know which seller you&apos;re getting — just like the desk. Closed book, graded automatically when you hang up. Certification takes 12 passed calls across 6 different sellers.
             </p>
           </>
         ) : (
@@ -458,7 +433,7 @@ export default function InterviewClient({
         )}
         {isTraining && (
           <p className="small muted" style={{ margin: "8px 0" }}>
-            When you start, the examiner introduces the test. Answer every prompt out loud, exactly as you would on a live call.
+            When you start, your line rings — <strong>you answer it and speak first</strong>, exactly like a real inbound call.
           </p>
         )}
         {isDrill && (
@@ -467,7 +442,7 @@ export default function InterviewClient({
           </p>
         )}
         <button className="btn btn-lg" disabled={!micOk} onClick={start}>
-          {isDrill ? "🎙 Start the drill" : isTraining ? "🎧 Start my certification test" : "📞 Call John"}
+          {isDrill ? "🎙 Start the drill" : isTraining ? "📞 Take the certification call" : "📞 Call John"}
         </button>
       </Shell>
     );
@@ -475,9 +450,9 @@ export default function InterviewClient({
   if (stage === "connecting")
     return (
       <Shell step={step}>
-        <h1 style={{ fontSize: 22 }}>{mode === "sales" ? "Ringing John…" : "Connecting to your examiner…"}</h1>
+        <h1 style={{ fontSize: 22 }}>{mode === "sales" ? "Ringing John…" : "Connecting your line…"}</h1>
         <div className="spinner" />
-        <p className="muted">{mode === "sales" ? "He usually picks up fast." : isDrill ? "The drill starts as soon as they pick up." : "The test starts as soon as they pick up."}</p>
+        <p className="muted">{mode === "sales" ? "He usually picks up fast." : isDrill ? "The drill starts as soon as they pick up." : "It rings as soon as you\u2019re connected."}</p>
       </Shell>
     );
 
@@ -510,30 +485,17 @@ export default function InterviewClient({
           {agentSpeaking ? "🗣️" : "🎙️"}
         </div>
         <h1 style={{ fontSize: 20 }}>
-          {agentSpeaking ? "Examiner / seller speaking…" : "Your line — speak"}
+          {agentSpeaking ? "Seller speaking…" : "Your line — speak"}
         </h1>
-        <div className="row" style={{ justifyContent: "center", gap: 8, margin: "10px 0" }}>
-          {PARTS.map((p, i) => (
-            <span
-              key={p.id}
-              className={`pill ${i < partIdx ? "pill-green" : i === partIdx ? "pill-blue" : "pill-gray"}`}
-            >
-              Part {p.id}
-            </span>
-          ))}
-        </div>
-        <p className="muted small" style={{ minHeight: 20 }}>
-          {partIdx >= 0 ? PARTS[partIdx].hint : "The examiner will walk you through four parts."}
-        </p>
-        <p className="muted small">The test ends automatically. No script — just like a real call.</p>
+        <p className="muted small">Certification call. Handle it start to finish — it ends when the call ends.</p>
         <button
           className="btn btn-ghost"
           onClick={() => {
-            if (window.confirm("End the test now? An unfinished test may not be gradeable."))
+            if (window.confirm("Hang up now? An unfinished call may not be gradeable."))
               endSession(false);
           }}
         >
-          End test early
+          Hang up
         </button>
       </Shell>
     );
@@ -581,7 +543,7 @@ export default function InterviewClient({
     return (
       <Shell step={step}>
         <h1 style={{ fontSize: 22 }}>
-          {isDrill ? "Grading your drill…" : `Saving your ${isTraining ? "test" : "call"}…`}
+          {isDrill ? "Grading your drill…" : isTraining ? "Grading your call…" : "Saving your call…"}
         </h1>
         <div className="spinner" />
         <p className="muted">Don&apos;t close this tab.</p>
@@ -645,22 +607,59 @@ export default function InterviewClient({
       );
     }
 
+    if (isTraining) {
+      const r = certResult;
+      return (
+        <Shell step={step}>
+          {r?.graded ? (
+            r.pass ? (
+              <>
+                <h1>✅ Call passed!</h1>
+                <p>
+                  <span className="pill pill-green" style={{ fontSize: 14 }}>{r.summary}</span>
+                </p>
+                <p className="small muted">This one counts toward your certification — 12 passed calls across 6 different sellers.</p>
+                {r.coaching && <p className="small muted">Coach&apos;s note: {r.coaching}</p>}
+                <div className="row" style={{ justifyContent: "center" }}>
+                  <button className="btn" onClick={() => window.location.reload()}>📞 Take another call</button>
+                  <a className="btn btn-ghost" href={`/learn/${token}`}>Back to my learning path</a>
+                </div>
+              </>
+            ) : (
+              <>
+                <h1>Not this one — take another call</h1>
+                <p>
+                  <span className="pill pill-red" style={{ fontSize: 14 }}>{r.summary}</span>
+                </p>
+                {r.reason && <p className="small" style={{ color: "var(--red)" }}>{r.reason}</p>}
+                {r.coaching && <p className="small muted">Coach&apos;s note: {r.coaching}</p>}
+                <div className="row" style={{ justifyContent: "center" }}>
+                  <button className="btn" onClick={() => window.location.reload()}>📞 Take another call</button>
+                  <a className="btn btn-ghost" href={`/learn/${token}`}>Back to my learning path</a>
+                </div>
+              </>
+            )
+          ) : (
+            <>
+              <h1>Call saved</h1>
+              <p className="small muted">We couldn&apos;t grade it automatically this time — the team can grade it manually, or just take another call.</p>
+              <div className="row" style={{ justifyContent: "center" }}>
+                <button className="btn" onClick={() => window.location.reload()}>📞 Take another call</button>
+                <a className="btn btn-ghost" href={`/learn/${token}`}>Back to my learning path</a>
+              </div>
+            </>
+          )}
+        </Shell>
+      );
+    }
+
     const attemptsAfterThis = attemptsUsed + 1;
     const salesRetakesLeft = MAX_SALES_ATTEMPTS - attemptsAfterThis;
     return (
       <Shell step={step}>
         <h1>✅ All done, {candidateName}!</h1>
-        <p>Your {isTraining ? "certification test" : "practice call"} was submitted. The {SELLER_BRAND} team will review it and get back to you.</p>
-        {isTraining ? (
-          <>
-            <p className="small muted">
-              Want another run? Each test draws different sellers and questions.
-            </p>
-            <button className="btn btn-secondary" onClick={() => window.location.reload()}>
-              Take it again
-            </button>
-          </>
-        ) : (
+        <p>Your practice call was submitted. The {SELLER_BRAND} team will review it and get back to you.</p>
+        {(
           salesRetakesLeft > 0 && (
             <>
               <p className="small muted">

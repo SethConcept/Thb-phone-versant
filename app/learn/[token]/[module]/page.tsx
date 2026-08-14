@@ -89,10 +89,10 @@ export default async function ModulePage({
           <div className={`learn-navitem learn-navtest ${state.allComplete || unlockAll ? "" : "locked"}`}>
             {state.allComplete || unlockAll ? (
               <Link href={`/interview/${token}`} className="learn-testlink">
-                🏁 Certification test — unlocked
+                🏁 Certification calls — unlocked
               </Link>
             ) : (
-              <span>🏁 Certification test <span className="learn-lock">🔒</span></span>
+              <span>🏁 Certification calls <span className="learn-lock">🔒</span></span>
             )}
           </div>
         </nav>
@@ -150,7 +150,7 @@ export default async function ModulePage({
               <span className="small muted">
                 {state.moduleComplete(moduleId)
                   ? isLast
-                    ? "Module complete — the certification test is unlocked in the sidebar."
+                    ? "Module complete — certification calls are unlocked in the sidebar."
                     : "Module complete."
                   : `To finish this module: pass the quiz${drill ? " and the drill" : ""}.`}
               </span>
@@ -161,7 +161,7 @@ export default async function ModulePage({
               )}
               {isLast && state.allComplete && (
                 <Link className="btn" href={`/interview/${token}`}>
-                  🏁 Take the certification test
+                  🏁 Take a certification call
                 </Link>
               )}
             </div>

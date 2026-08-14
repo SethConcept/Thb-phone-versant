@@ -117,21 +117,21 @@ export async function POST(req: Request) {
       );
     }
   } else if (isTraining) {
-    // Deterministic verdict — the model reports facts, the code decides.
+    // Certification call — deterministic verdict, the code decides.
     const v = versantVerdict(parsed);
     verdict = v.verdict;
     const hardFails = Array.isArray(parsed.hard_fails) ? parsed.hard_fails : [];
     row = {
       interview_id: interviewId,
-      detail: parsed, // full structured breakdown (parts A-D, quotes)
+      detail: parsed, // full structured breakdown (open, items, criteria, quotes)
       knockout: hardFails.length > 0 || parsed.part_a?.recording_disclosure !== true,
       knockout_reason: v.reason || null,
       verdict,
       scored_by: "ai",
       notes: [parsed.coaching_note, parsed.summary_note].filter(Boolean).join(" · "),
       // quick-scan columns
-      completeness: v.partDScore, // Part D criteria hit, out of DRILL_CRITERIA.length
-      conversational: v.itemsPassed, // B+C items passed, out of itemsTotal
+      completeness: v.criteriaScore, // call criteria hit, out of DRILL_CRITERIA.length
+      conversational: v.itemsPassed, // embedded seller lines passed
     };
   } else {
     // Sales practice ("John") — averaged categories with tunable bands.
@@ -179,7 +179,7 @@ export async function POST(req: Request) {
     ok: true,
     verdict,
     ...(isTraining && !isDrill
-      ? { partD: `${(row as any).completeness}/${DRILL_CRITERIA.length}` }
+      ? { call: `${(row as any).completeness}/${DRILL_CRITERIA.length}` }
       : {}),
   });
 }
