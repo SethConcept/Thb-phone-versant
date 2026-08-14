@@ -103,7 +103,7 @@ export default async function AdminPage({
               <th>Name</th>
               <th>Mode</th>
               <th>Status</th>
-              <th>Test link</th>
+              <th>Trainee link</th>
               <th></th>
             </tr>
           </thead>
@@ -120,7 +120,11 @@ export default async function AdminPage({
                   <span className={`pill ${STATUS_PILL[c.status] || "pill-gray"}`}>{c.status}</span>
                 </td>
                 <td style={{ maxWidth: 320 }}>
-                  <code className="linkbox">{`${base}/interview/${c.interview_token}`}</code>
+                  <code className="linkbox">
+                    {c.mode === "training"
+                      ? `${base}/learn/${c.interview_token}`
+                      : `${base}/interview/${c.interview_token}`}
+                  </code>
                 </td>
                 <td>
                   <Link href={`/admin/candidates/${c.id}`}>Open →</Link>

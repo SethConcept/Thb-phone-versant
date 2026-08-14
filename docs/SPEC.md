@@ -11,6 +11,30 @@ and the HR/hiring code was removed in the split.
 **Who it's for:** the Iriga seller-line team (Thea, Trining, Cherry) and any
 future seller-line hire. Cherry/Juan review results in admin.
 
+## The learning path (trainee home: /learn/&lt;token&gt;)
+
+Eight gated modules (content ported from the courseware), each finished by
+a 4-question server-graded quiz (pass at 3, retakeable) and — for m2–m8 —
+a 2-4 minute voice mini-drill matched to the module's skill:
+
+| Module | Drill |
+|--------|-------|
+| m1 Start here | quiz only |
+| m2 How every call opens | The Open — two incoming calls, deliver the full open |
+| m3 Never say this | Pressure lines — 3 of 9 banned-response baits |
+| m4 S·P·C·T·A | Seller questions — 3 approved-shape answers |
+| m5 The ten call models | Common calls — 3 of 6 (just-looking, investors, realtor, needs-work, email-offer, Juan-only) |
+| m6 Hard situations | 3 of 6 (probate, tenants, attorney, speed, lien, fees) |
+| m7 Being a person | Empathy persona — grieving / very quiet / elderly |
+| m8 The gate and the log | Endings — handoff, not-selling, callback, mailer |
+
+Drills auto-grade on completion (`/api/interviews/complete`): hard fail =
+FAIL always; items drills allow one miss; the open requires disclosure +
+name + source question + delivery ≥ 3; empathy requires all its criteria.
+Passing flips `module_progress.drill_passed`; quiz + drill complete a
+module; completing m8 unlocks the full test. Admin can bypass the gate per
+trainee (`candidates.skip_modules`) for dry runs.
+
 ## The test (one continuous voice session, ~10 min)
 
 | Part | Format | Drawn from | Tests |

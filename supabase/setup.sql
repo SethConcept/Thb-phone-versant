@@ -17,6 +17,8 @@ create table candidates (
   interview_token uuid unique default gen_random_uuid(),
   token_expires_at timestamptz default now() + interval '7 days',
     -- the app inserts NULL for training trainees = link never expires
+  skip_modules boolean not null default false,
+    -- admin override: full test without finishing the learning path
   created_at timestamptz default now()
 );
 
@@ -57,17 +59,33 @@ create table scores (
   ending_handling int
 );
 
+create table module_progress (
+  id uuid primary key default gen_random_uuid(),
+  candidate_id uuid references candidates(id) not null,
+  module_id text not null,            -- m1..m8
+  quiz_score int,
+  quiz_total int,
+  quiz_passed boolean not null default false,
+  drill_passed boolean not null default false,
+  drill_interview_id uuid references interviews(id),
+  updated_at timestamptz default now(),
+  unique (candidate_id, module_id)
+);
+
 -- Lock everything down. The app's server routes use the service-role key
 -- (bypasses RLS). Logged-in admins get full read/write.
 alter table candidates enable row level security;
 alter table interviews enable row level security;
 alter table scores enable row level security;
+alter table module_progress enable row level security;
 
 create policy "admins full access" on candidates
   for all to authenticated using (true) with check (true);
 create policy "admins full access" on interviews
   for all to authenticated using (true) with check (true);
 create policy "admins full access" on scores
+  for all to authenticated using (true) with check (true);
+create policy "admins full access" on module_progress
   for all to authenticated using (true) with check (true);
 
 -- Storage: create a PRIVATE bucket named `interview-audio` in the dashboard

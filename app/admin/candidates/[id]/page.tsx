@@ -11,6 +11,9 @@ import {
   SHORT_ANSWERS,
   SELLER_PERSONAS,
 } from "@/lib/academy";
+import { DRILLS, MODEL_ITEMS, ENDING_ITEMS } from "@/lib/drills";
+import { LEARN_MODULES } from "@/lib/modules";
+import { pathState, type ModuleProgressRow } from "@/lib/progress";
 
 const STATUSES = ["invited", "interviewed", "scored", "certified", "passed", "failed"];
 
@@ -31,16 +34,26 @@ async function setStatus(formData: FormData) {
   revalidatePath(`/admin/candidates/${id}`);
 }
 
+async function toggleSkip(formData: FormData) {
+  "use server";
+  const supabase = await supabaseServer();
+  const id = String(formData.get("id"));
+  const { error } = await supabase
+    .from("candidates")
+    .update({ skip_modules: formData.get("skip") === "on" })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/candidates/${id}`);
+}
+
 function verdictClass(v?: string) {
   if (v === "PASS") return "score-pass";
   if (v === "BORDERLINE") return "score-borderline";
   return "score-fail";
 }
 
-const itemLabel = (id: string) =>
-  PRESSURE_LINES.find((x) => x.id === id)?.seller ??
-  SHORT_ANSWERS.find((x) => x.id === id)?.seller ??
-  id;
+const ALL_ITEMS = [...PRESSURE_LINES, ...SHORT_ANSWERS, ...MODEL_ITEMS, ...ENDING_ITEMS];
+const itemLabel = (id: string) => ALL_ITEMS.find((x) => x.id === id)?.seller ?? id;
 
 const personaLabel = (id?: string) =>
   SELLER_PERSONAS.find((x) => x.id === id)?.label ?? id ?? "—";
@@ -75,6 +88,12 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
     .eq("candidate_id", id)
     .order("started_at", { ascending: false });
 
+  const { data: progressRows } = await supabase
+    .from("module_progress")
+    .select("module_id, quiz_score, quiz_total, quiz_passed, drill_passed")
+    .eq("candidate_id", id);
+  const path = pathState((progressRows ?? []) as ModuleProgressRow[]);
+
   // Signed URL for audio playback (private bucket)
   const admin = supabaseAdmin();
   const withAudio = await Promise.all(
@@ -88,12 +107,13 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
     })
   );
 
-  // Certification progress: passed tests + distinct personas passed
-  const passedAttempts = withAudio.filter((iv) => latestScore(iv)?.verdict === "PASS");
+  // Certification progress: passed FULL TESTS + distinct personas passed
+  const testAttempts = withAudio.filter((iv) => (iv.exam_meta as any)?.kind !== "drill");
+  const passedTests = testAttempts.filter((iv) => latestScore(iv)?.verdict === "PASS");
   const personasPassed = new Set(
-    passedAttempts.map((iv) => (iv.exam_meta as any)?.persona).filter(Boolean)
+    passedTests.map((iv) => (iv.exam_meta as any)?.persona).filter(Boolean)
   );
-  const gateMet = passedAttempts.length >= GATE_PASSES && personasPassed.size >= GATE_TYPES;
+  const gateMet = passedTests.length >= GATE_PASSES && personasPassed.size >= GATE_TYPES;
 
   return (
     <main className="fade-in">
@@ -113,20 +133,41 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
         </p>
 
         {isTraining && (
-          <div className="row" style={{ gap: 10, margin: "8px 0" }}>
-            <span className={`pill ${passedAttempts.length >= GATE_PASSES ? "pill-green" : "pill-gray"}`}>
-              Tests passed: {passedAttempts.length} / {GATE_PASSES}
-            </span>
-            <span className={`pill ${personasPassed.size >= GATE_TYPES ? "pill-green" : "pill-gray"}`}>
-              Different sellers passed: {personasPassed.size} / {GATE_TYPES}
-            </span>
-            <span className={`pill ${gateMet ? "pill-green" : "pill-amber"}`}>
-              {gateMet ? "✓ Gate met — ready to certify" : "In training"}
-            </span>
-          </div>
+          <>
+            <div className="row" style={{ gap: 6, margin: "8px 0", flexWrap: "wrap" }}>
+              {LEARN_MODULES.map((m) => {
+                const row = path.byModule[m.id];
+                const complete = path.moduleComplete(m.id);
+                const started = !!row;
+                return (
+                  <span
+                    key={m.id}
+                    className={`pill ${complete ? "pill-green" : started ? "pill-amber" : "pill-gray"}`}
+                    title={`${m.title} — quiz ${row?.quiz_passed ? "✓" : row?.quiz_score != null ? `${row.quiz_score}/${row.quiz_total}` : "—"}${m.hasDrill ? ` · drill ${row?.drill_passed ? "✓" : "—"}` : ""}`}
+                  >
+                    {complete ? "✓" : ""} M{m.num}
+                  </span>
+                );
+              })}
+              <span className="pill pill-gray">
+                {LEARN_MODULES.filter((m) => path.moduleComplete(m.id)).length}/{LEARN_MODULES.length} modules
+              </span>
+            </div>
+            <div className="row" style={{ gap: 10, margin: "8px 0" }}>
+              <span className={`pill ${passedTests.length >= GATE_PASSES ? "pill-green" : "pill-gray"}`}>
+                Tests passed: {passedTests.length} / {GATE_PASSES}
+              </span>
+              <span className={`pill ${personasPassed.size >= GATE_TYPES ? "pill-green" : "pill-gray"}`}>
+                Different sellers passed: {personasPassed.size} / {GATE_TYPES}
+              </span>
+              <span className={`pill ${gateMet ? "pill-green" : "pill-amber"}`}>
+                {gateMet ? "✓ Gate met — ready to certify" : "In training"}
+              </span>
+            </div>
+          </>
         )}
 
-        <div className="row">
+        <div className="row" style={{ gap: 18 }}>
           <form action={setStatus} className="row">
             <input type="hidden" name="id" value={trainee.id} />
             <label className="small muted">Status:</label>
@@ -137,6 +178,16 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
             </select>
             <button className="btn btn-secondary">Save</button>
           </form>
+          {isTraining && (
+            <form action={toggleSkip} className="row">
+              <input type="hidden" name="id" value={trainee.id} />
+              <label className="small muted" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input type="checkbox" name="skip" defaultChecked={!!trainee.skip_modules} />
+                Skip module gate (dry runs)
+              </label>
+              <button className="btn btn-secondary">Apply</button>
+            </form>
+          )}
         </div>
       </div>
 
@@ -146,14 +197,23 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
 
       {withAudio.map((iv, idx) => {
         const draw = iv.exam_meta as any;
+        const isDrillAttempt = draw?.kind === "drill";
+        const drillDef = isDrillAttempt ? DRILLS[draw.module] : undefined;
         return (
         <section key={iv.id} className="card" style={{ marginTop: 16 }}>
           <div className="row" style={{ justifyContent: "space-between" }}>
             <h2 style={{ fontSize: 16, margin: 0 }}>
-              Attempt {withAudio.length - idx}
-              {isTraining && draw?.persona && (
+              {isDrillAttempt
+                ? `🎙 Drill · ${drillDef?.title ?? draw.module}`
+                : `${isTraining ? "🏁 Test" : "Attempt"} ${withAudio.length - idx}`}
+              {!isDrillAttempt && isTraining && draw?.persona && (
                 <span className="pill pill-gray" style={{ marginLeft: 8, fontWeight: 400 }}>
                   Part D seller: {personaLabel(draw.persona)}
+                </span>
+              )}
+              {isDrillAttempt && draw?.persona && (
+                <span className="pill pill-gray" style={{ marginLeft: 8, fontWeight: 400 }}>
+                  Seller: {personaLabel(draw.persona)}
                 </span>
               )}
               <span className="muted small" style={{ fontWeight: 400 }}>
@@ -190,14 +250,53 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
             .slice()
             .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
             .map((s: any, sIdx: number, arr: any[]) => {
-              const d = s.detail as any; // Versant structured breakdown
+              const d = s.detail as any; // structured breakdown
               return (
               <div key={s.id} className={`score-card ${verdictClass(s.verdict)}`}>
                 <div className="small muted" style={{ marginBottom: 4 }}>
-                  Score #{sIdx + 1} of this attempt{sIdx === arr.length - 1 ? " (latest)" : " (superseded)"} · {new Date(s.created_at).toLocaleString()}
+                  Score #{sIdx + 1}{sIdx === arr.length - 1 ? " (latest)" : " (superseded)"} · {new Date(s.created_at).toLocaleString()}
                 </div>
 
-                {d ? (
+                {d && isDrillAttempt ? (
+                  <>
+                    <strong>{s.verdict}</strong> ({s.scored_by})
+                    {s.knockout_reason && (
+                      <span style={{ marginLeft: 8, color: "var(--red)" }}>— {s.knockout_reason}</span>
+                    )}
+                    {(d.hard_fails ?? []).length > 0 && (
+                      <div className="notice notice-gray small" style={{ margin: "8px 0", color: "var(--red)" }}>
+                        {(d.hard_fails ?? []).map((h: any, i: number) => (
+                          <div key={i}>🚫 <strong>{hardFailLabel(h.rule)}</strong>{h.quote && <> — “{h.quote}”</>}</div>
+                        ))}
+                      </div>
+                    )}
+                    {d.part_a && (
+                      <div className="small" style={{ marginTop: 6 }}>
+                        {d.part_a.name_given ? "✓ name" : "✗ name"} ·{" "}
+                        {d.part_a.recording_disclosure ? "✓ recording disclosure" : "✗ RECORDING DISCLOSURE"} ·{" "}
+                        {d.part_a.source_question ? "✓ how-did-you-hear" : "✗ how-did-you-hear"} ·{" "}
+                        delivery {d.part_a.delivery ?? "—"}/5
+                        {d.part_a.note && <span className="muted"> — {d.part_a.note}</span>}
+                      </div>
+                    )}
+                    {(d.items ?? []).map((item: any, i: number) => (
+                      <div key={i} className="small" style={{ marginLeft: 12 }}>
+                        {item.pass ? "✓" : "✗"} “{itemLabel(item.id)}”
+                        {item.note && <span className="muted"> — {item.note}</span>}
+                      </div>
+                    ))}
+                    {d.criteria && drillDef?.personaCriteria && (
+                      <div className="small" style={{ marginTop: 6 }}>
+                        {drillDef.personaCriteria.map((c) => (
+                          <div key={c.id} style={{ marginLeft: 12 }}>
+                            {d.criteria[c.id] ? "✓" : "✗"} {c.label}
+                          </div>
+                        ))}
+                        {d.persona_note && <div className="muted" style={{ marginLeft: 12 }}>{d.persona_note}</div>}
+                      </div>
+                    )}
+                  </>
+                ) : d ? (
                   <>
                     <strong>{s.verdict}</strong> ({s.scored_by})
                     {s.knockout_reason && (

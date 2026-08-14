@@ -5,17 +5,22 @@ import { LIVE_MODEL } from "@/lib/models";
 import { johnSystemPrompt } from "@/lib/sales-prompts";
 import { versantSystemPrompt } from "@/lib/versant-prompts";
 import { drawExam } from "@/lib/academy";
+import { drawDrill, DRILLS } from "@/lib/drills";
+import { drillSystemPrompt } from "@/lib/drill-prompts";
+import { getModule } from "@/lib/modules";
+import { pathState } from "@/lib/progress";
 
 // Trainee clicked "start". Validates the link token, logs consent, creates
 // the session row, and mints a single-use ephemeral token so the
 // GEMINI_API_KEY never reaches the browser.
 //
-// Modes:
-//   'training' — Versant certification test. Unlimited attempts; the exam
-//                draw (personas/items) is stored on the row for scoring.
-//   'sales'    — practice call vs "John" (max 3 attempts, easy/hard).
+// Sessions:
+//   training + drill  — a module mini-drill (requires that module's quiz)
+//   training          — the full Versant test (requires all modules, unless
+//                       the trainee has the admin skip_modules override)
+//   sales             — practice call vs "John" (max 3 attempts, easy/hard)
 export async function POST(req: Request) {
-  const { token } = await req.json().catch(() => ({}));
+  const { token, drill } = await req.json().catch(() => ({}));
   if (!token) return NextResponse.json({ error: "Missing token" }, { status: 400 });
 
   const db = supabaseAdmin();
@@ -28,6 +33,7 @@ export async function POST(req: Request) {
   if (!candidate) return NextResponse.json({ error: "Invalid link" }, { status: 404 });
 
   const isTraining = candidate.mode === "training";
+  const isDrill = isTraining && typeof drill === "string" && drill.length > 0;
 
   if (!isTraining) {
     if (candidate.token_expires_at && new Date(candidate.token_expires_at) < new Date())
@@ -47,9 +53,39 @@ export async function POST(req: Request) {
   if (!isTraining && (attemptsUsed ?? 0) >= MAX_ATTEMPTS)
     return NextResponse.json({ error: "All attempts have been used" }, { status: 409 });
 
-  // Training: draw this run's exam (3 pressure lines, 3 questions, 1 seller
-  // persona) and persist the draw so the scorer grades the same material.
-  const examMeta = isTraining ? drawExam() : null;
+  // Learning-path gates
+  let examMeta: any = null;
+  if (isDrill) {
+    const mod = getModule(drill);
+    if (!mod || !DRILLS[drill])
+      return NextResponse.json({ error: "Unknown drill" }, { status: 404 });
+    const { data: rows } = await db
+      .from("module_progress")
+      .select("module_id, quiz_score, quiz_total, quiz_passed, drill_passed")
+      .eq("candidate_id", candidate.id);
+    const state = pathState(rows ?? []);
+    if (!candidate.skip_modules) {
+      if (!state.unlocked(drill))
+        return NextResponse.json({ error: "Finish the previous module first" }, { status: 409 });
+      if (!state.byModule[drill]?.quiz_passed)
+        return NextResponse.json({ error: "Pass this module's quiz before the drill" }, { status: 409 });
+    }
+    examMeta = drawDrill(drill);
+  } else if (isTraining) {
+    if (!candidate.skip_modules) {
+      const { data: rows } = await db
+        .from("module_progress")
+        .select("module_id, quiz_score, quiz_total, quiz_passed, drill_passed")
+        .eq("candidate_id", candidate.id);
+      const state = pathState(rows ?? []);
+      if (!state.allComplete)
+        return NextResponse.json(
+          { error: "Finish all modules in the learning path to unlock the certification test" },
+          { status: 409 }
+        );
+    }
+    examMeta = drawExam();
+  }
 
   const { data: interview, error } = await db
     .from("interviews")
@@ -81,10 +117,12 @@ export async function POST(req: Request) {
     // LIVE_MODEL env var overrides the default — lets us switch Live model
     // names from Vercel settings without a code change (they rotate often)
     model: process.env.LIVE_MODEL || LIVE_MODEL,
-    systemPrompt: isTraining
-      ? versantSystemPrompt(candidate.full_name, examMeta!)
-      : johnSystemPrompt(candidate.difficulty === "hard" ? "hard" : "easy"),
-    mode: candidate.mode || "sales",
+    systemPrompt: isDrill
+      ? drillSystemPrompt(candidate.full_name, examMeta)
+      : isTraining
+        ? versantSystemPrompt(candidate.full_name, examMeta)
+        : johnSystemPrompt(candidate.difficulty === "hard" ? "hard" : "easy"),
+    mode: isDrill ? "drill" : candidate.mode || "sales",
     attempt: (attemptsUsed ?? 0) + 1,
     maxAttempts: isTraining ? null : MAX_ATTEMPTS,
   });

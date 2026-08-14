@@ -136,6 +136,18 @@ export const SHORT_ANSWERS: ShortAnswer[] = [
     pass: "Doesn't fight for control and doesn't over-qualify: Juan's out at a property; I work with him directly — tell me what's going on and I'll get him everything he needs, then get you connected.",
     fail: "Claims to see where Juan is, promises he'll call in X minutes, or interrogates before helping.",
   },
+  {
+    id: "probate",
+    seller: "My mother passed and the house is in probate — can you folks even buy something like that?",
+    pass: "Reassures that Juan works with probate and inherited properties often, then asks where they are in the process, whether there's an attorney, and whether everyone on title agrees.",
+    fail: "Gives legal advice, guesses at probate rules, or jumps to price/timing before asking about title and heirs.",
+  },
+  {
+    id: "tenants",
+    seller: "The house has renters living in it. Is that going to be a problem?",
+    pass: "Treats it as normal: Juan buys tenant-occupied properties; asks whether it's a lease or month-to-month and what the situation is. No eviction advice.",
+    fail: "Suggests removing the tenants, gives eviction advice, or treats tenants as a dealbreaker.",
+  },
 ];
 
 // ---------------------------------------------------------------------------

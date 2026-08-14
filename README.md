@@ -1,9 +1,20 @@
 # THB Phone Academy — Versant Training
 
 AI voice training and certification for the Twin Home Buyer seller line
-(Iriga desk). Two tools in one app, plus the courseware:
+(Iriga desk). A gated learning path that ends in a Versant-style
+certification test, plus a sales practice mode and the courseware:
 
-1. **🎧 Versant certification test** — a four-part spoken test administered
+1. **📚 Learning path** (`/learn/<token>` — the trainee's home): sidebar of
+   8 modules ported from the Phone Academy. Each module = content → a
+   **4-question quiz** (pass at 3, graded server-side, instantly
+   retakeable) → a **voice mini-drill** matched to that module's skill
+   (the open, pressure lines, seller questions, common calls, hard
+   situations, empathy personas, endings). Drills are auto-graded the
+   moment they end — hard fails always fail. Quiz + drill unlock the next
+   module; finishing all 8 unlocks the certification test. Admin can
+   bypass the gate per trainee (`skip_modules`) for dry runs.
+
+2. **🎧 Versant certification test** — a four-part spoken test administered
    and graded by AI, modeled on the Versant format but scored on THB call
    rules instead of English fluency:
    - **Part A** — answer an incoming call with the mandatory open (name,
@@ -25,11 +36,11 @@ AI voice training and certification for the Twin Home Buyer seller line
    **Certification gate** (tracked per trainee in admin): 12 passed tests
    across at least 6 different seller personas.
 
-2. **📞 Sales practice call** — the AI plays "John", a homeowner lead; the
+3. **📞 Sales practice call** — the AI plays "John", a homeowner lead; the
    trainee runs the outbound follow-up script. Easy/hard difficulty,
    engagement-meter behavior, AI-scored (max 3 attempts per link).
 
-3. **📖 Phone Academy courseware** — the full study course (8 modules,
+4. **📖 Phone Academy courseware** — the full study course (8 modules,
    banned lines, S·P·C·T·A, desk card, self-study drills and written exam)
    served at `/academy.html`.
 
@@ -64,13 +75,15 @@ separate from the THB HR voice-screen stack. Nothing here touches it.
 ## Flow
 
 Admin adds a trainee at `/admin` (Versant or sales practice) → copies the
-generated link → trainee opens `/interview/<token>` → consents (logged, CA
-two-party) → mic check → live voice session → transcript + recording
-auto-saved → admin clicks **Score with AI** → structured verdict → progress
-toward the certification gate shows on the trainee page.
+generated link (training links go to `/learn/<token>`) → trainee works
+through the module path: read → quiz → voice drill (consent logged, CA
+two-party; drills auto-graded) → all 8 done unlocks `/interview/<token>`,
+the full certification test → admin clicks **Score with AI** on tests →
+structured verdict → module progress and the certification gate show on
+the trainee's admin page.
 
-Versant links never expire and have no attempt cap; each run draws a fresh
-random exam. Sales practice links allow 3 attempts.
+Versant links never expire and have no attempt cap; each drill and test
+draws fresh random material. Sales practice links allow 3 attempts.
 
 ## Security notes
 
@@ -81,8 +94,11 @@ random exam. Sales practice links allow 3 attempts.
 ## Verify during dry run
 
 - [ ] Live session connects with ephemeral token (`v1alpha` API)
+- [ ] Quiz grades, stores best score, and unlocks the drill on pass
+- [ ] Drill auto-grades on completion and flips the module gate
+- [ ] Locked modules/test actually block (and `skip_modules` bypasses)
 - [ ] Examiner announces "Part A…D" and the screen tracker follows
-- [ ] "TEST COMPLETE" / "CALL COMPLETE" trigger auto-ends the session
+- [ ] "TEST/CALL/DRILL COMPLETE" markers auto-end the session
 - [ ] Audio .webm uploads and plays back in admin
 - [ ] Scoring returns valid JSON; hard fails quote the trainee's words
 - [ ] A run with a deliberate price quote comes back FAIL
