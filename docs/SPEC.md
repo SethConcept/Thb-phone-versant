@@ -17,9 +17,8 @@ Eight gated modules (content ported from the courseware), each completed by
 its 4-question server-graded quiz (pass at 3, instantly retakeable).
 Quizzes alone gate progression; completing all eight unlocks the
 certification calls. Admin can bypass the gate per trainee
-(`candidates.skip_modules`) or site-wide with ADMIN_UNLOCK_CODE: entering
-it once (sidebar "Admin" form) flips the `global_unlock` flag in
-`app_settings` and unlocks everything for everyone until "Lock again".
+(`candidates.skip_modules`) or site-wide with the ADMIN_UNLOCK_CODE
+preview cookie.
 
 ## The drill room (optional, never graded)
 
