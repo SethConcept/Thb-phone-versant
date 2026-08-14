@@ -2,15 +2,15 @@ import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { SCORING_MODEL } from "@/lib/models";
-import { drillScoringPrompt } from "@/lib/drill-prompts";
-import { drillVerdict } from "@/lib/drills";
 import { versantScoringPrompt, versantVerdict } from "@/lib/versant-prompts";
 import { resolveDraw } from "@/lib/academy";
 
 // Called by the session page when it ends (complete or aborted).
 // Saves transcript + audio recording, marks the trainee as interviewed.
-// Mini-drills AND certification calls are auto-graded here so the trainee
-// gets an instant result; sales calls stay admin-graded via /api/score.
+// Certification calls are auto-graded here (instant result). Drill-room
+// runs are OPTIONAL coached practice — saved for admin review, never
+// graded (the coaching happened live, on the call). Sales calls stay
+// admin-graded via /api/score.
 export async function POST(req: Request) {
   const form = await req.formData();
   const interviewId = String(form.get("interviewId") || "");
@@ -78,72 +78,10 @@ export async function POST(req: Request) {
     })
     .eq("id", interview.candidate_id);
 
-  // ---- Drill auto-grading ----
-  if (isDrill && transcript.length >= 2) {
-    const transcriptText = transcript
-      .map((t) => `${t.role === "agent" ? "EXAMINER/SELLER" : "TRAINEE"}: ${t.text}`)
-      .join("\n");
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-      const result = await ai.models.generateContent({
-        model: process.env.SCORING_MODEL || SCORING_MODEL,
-        contents: drillScoringPrompt(transcriptText, interview.exam_meta),
-      });
-      const parsed = JSON.parse((result.text ?? "").replace(/```json|```/g, "").trim());
-      const v = drillVerdict(interview.exam_meta, parsed);
-
-      // audit record for admin
-      await db.from("scores").insert({
-        interview_id: interviewId,
-        detail: parsed,
-        knockout: (parsed.hard_fails ?? []).length > 0,
-        knockout_reason: v.pass ? null : v.reason,
-        verdict: v.pass ? "PASS" : "FAIL",
-        scored_by: "ai",
-        notes: parsed.coaching_note || null,
-      });
-
-      // gate progress: drill_passed only ever flips forward
-      if (v.pass) {
-        const { data: existing } = await db
-          .from("module_progress")
-          .select("id, quiz_score, quiz_total, quiz_passed")
-          .eq("candidate_id", interview.candidate_id)
-          .eq("module_id", interview.exam_meta.module)
-          .maybeSingle();
-        await db.from("module_progress").upsert(
-          {
-            candidate_id: interview.candidate_id,
-            module_id: interview.exam_meta.module,
-            quiz_score: existing?.quiz_score ?? null,
-            quiz_total: existing?.quiz_total ?? null,
-            quiz_passed: existing?.quiz_passed ?? false,
-            drill_passed: true,
-            drill_interview_id: interviewId,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "candidate_id,module_id" }
-        );
-      }
-
-      return NextResponse.json({
-        ok: true,
-        drill: {
-          graded: true,
-          pass: v.pass,
-          reason: v.reason,
-          summary: v.summary,
-          coaching: parsed.coaching_note || "",
-        },
-      });
-    } catch (e: any) {
-      // Grading failed (quota, parse error) — the attempt is saved; the
-      // trainee can rerun the drill, or an admin can grade it manually.
-      return NextResponse.json({
-        ok: true,
-        drill: { graded: false, pass: false, reason: "", summary: "", coaching: "" },
-      });
-    }
+  // Drill-room runs: never graded — the coach already gave advice on the
+  // call itself. Saved (transcript + audio) for admin review only.
+  if (isDrill) {
+    return NextResponse.json({ ok: true, drill: { practice: true } });
   }
 
   // ---- Certification-call auto-grading ----

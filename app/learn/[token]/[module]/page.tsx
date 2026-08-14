@@ -2,7 +2,6 @@ import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { SELLER_BRAND } from "@/lib/academy";
 import { LEARN_MODULES, getModule } from "@/lib/modules";
-import { DRILLS } from "@/lib/drills";
 import { quizForClient } from "@/lib/quizzes";
 import { pathState } from "@/lib/progress";
 import { isAdminPreview } from "@/lib/admin-preview";
@@ -45,8 +44,6 @@ export default async function ModulePage({
   const canView = unlockAll || state.unlocked(moduleId);
   const row = state.byModule[moduleId];
   const quizPassed = !!row?.quiz_passed;
-  const drillPassed = !!row?.drill_passed;
-  const drill = DRILLS[moduleId];
   const isLast = mod.id === LEARN_MODULES[LEARN_MODULES.length - 1].id;
   const nextModule = LEARN_MODULES[mod.num] ?? null; // num is 1-based → next index
 
@@ -86,7 +83,12 @@ export default async function ModulePage({
               </span>
             );
           })}
-          <div className={`learn-navitem learn-navtest ${state.allComplete || unlockAll ? "" : "locked"}`}>
+          <div className="learn-navitem learn-navtest">
+            <Link href={`/learn/${token}/drills`} className="learn-testlink">
+              🎙 Drill room <span className="small muted">(optional)</span>
+            </Link>
+          </div>
+          <div className={`learn-navitem learn-navtest ${state.allComplete || unlockAll ? "" : "locked"}`} style={{ borderTop: "none", marginTop: 0, paddingTop: 0 }}>
             {state.allComplete || unlockAll ? (
               <Link href={`/interview/${token}`} className="learn-testlink">
                 🏁 Certification calls — unlocked
@@ -103,7 +105,7 @@ export default async function ModulePage({
         {!canView ? (
           <div className="card" style={{ maxWidth: 640 }}>
             <h1 style={{ fontSize: 22 }}>🔒 Not yet</h1>
-            <p>Finish the previous module — content, quiz{drill ? ", and drill" : ""} — to unlock this one.</p>
+            <p>Finish the previous module — content and quiz — to unlock this one.</p>
             <Link className="btn btn-secondary" href={`/learn/${token}`}>Go to my current module</Link>
           </div>
         ) : (
@@ -127,32 +129,13 @@ export default async function ModulePage({
               <Quiz token={token} moduleId={moduleId} questions={quizForClient(moduleId)} />
             </section>
 
-            {drill && (
-              <section className="card learn-gate">
-                <div className="row" style={{ justifyContent: "space-between" }}>
-                  <h2 style={{ fontSize: 17, margin: 0 }}>🎙 Voice drill: {drill.title}</h2>
-                  {drillPassed && <span className="pill pill-green">✓ passed</span>}
-                </div>
-                <p className="small muted" style={{ marginTop: 6 }}>{drill.intro}</p>
-                {quizPassed || unlockAll ? (
-                  <Link className="btn" href={`/interview/${token}?drill=${moduleId}`}>
-                    {drillPassed ? "Run it again" : "Start the drill"}
-                  </Link>
-                ) : (
-                  <p className="notice notice-gray small" style={{ margin: 0 }}>
-                    Pass the quiz above to unlock the drill.
-                  </p>
-                )}
-              </section>
-            )}
-
             <div className="row" style={{ marginTop: 20, justifyContent: "space-between" }}>
               <span className="small muted">
                 {state.moduleComplete(moduleId)
                   ? isLast
                     ? "Module complete — certification calls are unlocked in the sidebar."
                     : "Module complete."
-                  : `To finish this module: pass the quiz${drill ? " and the drill" : ""}.`}
+                  : "To finish this module: pass the quiz."}
               </span>
               {!isLast && nextModule && state.moduleComplete(moduleId) && (
                 <Link className="btn" href={`/learn/${token}/${nextModule.id}`}>

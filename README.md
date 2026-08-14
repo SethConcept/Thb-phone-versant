@@ -7,16 +7,16 @@ certification test, plus a sales practice mode and the courseware:
 1. **📚 Learning path** (`/learn/<token>` — the trainee's home): sidebar of
    8 modules ported from the Phone Academy. Each module = content → a
    **4-question quiz** (pass at 3, graded server-side, instantly
-   retakeable) → a **voice mini-drill** matched to that module's skill
-   (the open, pressure lines, seller questions, common calls, hard
-   situations, empathy personas, endings). Drills are auto-graded the
-   moment they end — hard fails always fail. Quiz + drill unlock the next
-   module; finishing all 8 unlocks the certification test. Two admin
-   bypasses for dry runs: the per-trainee "skip module gate" checkbox in
-   admin, and the global `ADMIN_UNLOCK_CODE` (env var) — type it once
-   under "Admin" at the bottom of any learning-path sidebar and that
-   device gets a 30-day preview cookie unlocking everything on every
-   trainee link, without touching trainee records.
+   retakeable). Quizzes alone unlock the next module; finishing all 8
+   unlocks the certification calls. A **🎙 Drill room** in the sidebar is
+   optional, ungated, never-graded coached practice: 1 question or 3 in a
+   row from the whole course pool, with the AI coach giving spoken advice
+   right after each answer. Two admin bypasses for dry runs: the
+   per-trainee "skip module gate" checkbox in admin, and the global
+   `ADMIN_UNLOCK_CODE` (env var) — type it once under "Admin" at the
+   bottom of any learning-path sidebar and that device gets a 30-day
+   preview cookie unlocking everything on every trainee link, without
+   touching trainee records.
 
 2. **📞 The certification call** — ONE realistic inbound call, ~5 minutes,
    auto-graded the moment it ends. The line rings, the trainee answers with
@@ -106,8 +106,8 @@ draws fresh random material. Sales practice links allow 3 attempts.
 ## Verify during dry run
 
 - [ ] Live session connects with ephemeral token (`v1alpha` API)
-- [ ] Quiz grades, stores best score, and unlocks the drill on pass
-- [ ] Drill auto-grades on completion and flips the module gate
+- [ ] Quiz grades, stores best score, and unlocks the next module
+- [ ] Drill room coach gives spoken advice after each answer, then ends
 - [ ] Locked modules/test actually block (and `skip_modules` bypasses)
 - [ ] Certification call rings, trainee speaks first, seller stays in character
 - [ ] Embedded pressure lines/questions actually get woven into the call

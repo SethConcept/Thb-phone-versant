@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import InterviewClient from "./interview-client";
 import { SELLER_BRAND, CERT_SELLERS } from "@/lib/academy";
 import { CALL_SCRIPT } from "@/lib/sales-prompts";
-import { DRILLS } from "@/lib/drills";
+import { PRACTICE_MODES } from "@/lib/drills";
 import { pathState } from "@/lib/progress";
 import { isAdminPreview } from "@/lib/admin-preview";
 
@@ -41,7 +41,7 @@ export default async function InterviewPage({
     return <Shell><h1>Link not found</h1><p>Please check the link you received, or contact {SELLER_BRAND}.</p></Shell>;
 
   const isTraining = candidate.mode === "training";
-  const drillDef = isTraining && drill ? DRILLS[drill] : undefined;
+  const drillDef = isTraining && drill ? PRACTICE_MODES[drill] : undefined;
 
   const { count: attemptsUsed } = await db
     .from("interviews")
@@ -86,6 +86,7 @@ export default async function InterviewPage({
       drillModule={drillDef ? drill! : ""}
       drillTitle={drillDef ? drillDef.title : ""}
       drillIntro={drillDef ? drillDef.intro : ""}
+      drillCapMs={drillDef ? drillDef.capMs : 0}
       sellers={isTraining && !drillDef ? DESK_SELLERS : []}
     />
   );

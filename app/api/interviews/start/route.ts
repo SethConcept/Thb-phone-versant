@@ -5,9 +5,8 @@ import { LIVE_MODEL } from "@/lib/models";
 import { johnSystemPrompt } from "@/lib/sales-prompts";
 import { versantSystemPrompt } from "@/lib/versant-prompts";
 import { drawExam, currentCycleSeen } from "@/lib/academy";
-import { drawDrill, DRILLS } from "@/lib/drills";
+import { drawPractice, PRACTICE_MODES } from "@/lib/drills";
 import { drillSystemPrompt } from "@/lib/drill-prompts";
-import { getModule } from "@/lib/modules";
 import { pathState } from "@/lib/progress";
 import { isAdminPreview } from "@/lib/admin-preview";
 
@@ -16,9 +15,10 @@ import { isAdminPreview } from "@/lib/admin-preview";
 // GEMINI_API_KEY never reaches the browser.
 //
 // Sessions:
-//   training + drill  — a module mini-drill (requires that module's quiz)
-//   training          — the full Versant test (requires all modules, unless
-//                       the trainee has the admin skip_modules override)
+//   training + drill  — the OPTIONAL drill room (coached practice, ungated,
+//                       never graded; drill = 'one' | 'three')
+//   training          — a certification call (requires all module quizzes,
+//                       unless the trainee has the skip_modules override)
 //   sales             — practice call vs "John" (max 3 attempts, easy/hard)
 export async function POST(req: Request) {
   const { token, drill, persona } = await req.json().catch(() => ({}));
@@ -58,21 +58,11 @@ export async function POST(req: Request) {
   const preview = await isAdminPreview();
   let examMeta: any = null;
   if (isDrill) {
-    const mod = getModule(drill);
-    if (!mod || !DRILLS[drill])
-      return NextResponse.json({ error: "Unknown drill" }, { status: 404 });
-    const { data: rows } = await db
-      .from("module_progress")
-      .select("module_id, quiz_score, quiz_total, quiz_passed, drill_passed")
-      .eq("candidate_id", candidate.id);
-    const state = pathState(rows ?? []);
-    if (!candidate.skip_modules && !preview) {
-      if (!state.unlocked(drill))
-        return NextResponse.json({ error: "Finish the previous module first" }, { status: 409 });
-      if (!state.byModule[drill]?.quiz_passed)
-        return NextResponse.json({ error: "Pass this module's quiz before the drill" }, { status: 409 });
-    }
-    examMeta = drawDrill(drill);
+    // Drill room is optional and ungated — anyone with a training link can
+    // practice anytime. Never graded, never counts toward anything.
+    if (!PRACTICE_MODES[drill])
+      return NextResponse.json({ error: "Unknown drill mode" }, { status: 404 });
+    examMeta = drawPractice(drill);
   } else if (isTraining) {
     if (!candidate.skip_modules && !preview) {
       const { data: rows } = await db

@@ -12,7 +12,7 @@ import {
   SELLER_PERSONAS,
   CERT_SELLERS,
 } from "@/lib/academy";
-import { DRILLS, MODEL_ITEMS, ENDING_ITEMS } from "@/lib/drills";
+import { MODEL_ITEMS, ENDING_ITEMS } from "@/lib/drills";
 import { LEARN_MODULES } from "@/lib/modules";
 import { pathState, type ModuleProgressRow } from "@/lib/progress";
 
@@ -148,7 +148,7 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
                   <span
                     key={m.id}
                     className={`pill ${complete ? "pill-green" : started ? "pill-amber" : "pill-gray"}`}
-                    title={`${m.title} — quiz ${row?.quiz_passed ? "✓" : row?.quiz_score != null ? `${row.quiz_score}/${row.quiz_total}` : "—"}${m.hasDrill ? ` · drill ${row?.drill_passed ? "✓" : "—"}` : ""}`}
+                    title={`${m.title} — quiz ${row?.quiz_passed ? "✓" : row?.quiz_score != null ? `${row.quiz_score}/${row.quiz_total}` : "—"}`}
                   >
                     {complete ? "✓" : ""} M{m.num}
                   </span>
@@ -203,13 +203,12 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
       {withAudio.map((iv, idx) => {
         const draw = iv.exam_meta as any;
         const isDrillAttempt = draw?.kind === "drill";
-        const drillDef = isDrillAttempt ? DRILLS[draw.module] : undefined;
         return (
         <section key={iv.id} className="card" style={{ marginTop: 16 }}>
           <div className="row" style={{ justifyContent: "space-between" }}>
             <h2 style={{ fontSize: 16, margin: 0 }}>
               {isDrillAttempt
-                ? `🎙 Drill · ${drillDef?.title ?? draw.module}`
+                ? "🎙 Drill room (coached practice — not graded)"
                 : `${isTraining ? (draw?.picked ? "📞 Practice call" : "🏁 Certification call") : "Attempt"} ${withAudio.length - idx}`}
               {!isDrillAttempt && isTraining && draw?.persona && (
                 <span className="pill pill-gray" style={{ marginLeft: 8, fontWeight: 400 }}>
@@ -290,16 +289,7 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
                         {item.note && <span className="muted"> — {item.note}</span>}
                       </div>
                     ))}
-                    {d.criteria && drillDef?.personaCriteria && (
-                      <div className="small" style={{ marginTop: 6 }}>
-                        {drillDef.personaCriteria.map((c) => (
-                          <div key={c.id} style={{ marginLeft: 12 }}>
-                            {d.criteria[c.id] ? "✓" : "✗"} {c.label}
-                          </div>
-                        ))}
-                        {d.persona_note && <div className="muted" style={{ marginLeft: 12 }}>{d.persona_note}</div>}
-                      </div>
-                    )}
+                    {d.persona_note && <div className="small muted" style={{ marginLeft: 12 }}>{d.persona_note}</div>}
                   </>
                 ) : d ? (
                   <>
@@ -396,7 +386,7 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
               </div>
             );})}
 
-          {Array.isArray(iv.transcript) && (iv.transcript as any[]).length >= 4 && (
+          {!isDrillAttempt && Array.isArray(iv.transcript) && (iv.transcript as any[]).length >= 4 && (
             <ScoreButton interviewId={iv.id} rescore={(iv.scores ?? []).length > 0} />
           )}
 

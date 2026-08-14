@@ -9,7 +9,8 @@
 //              the trainee answers, and the AI caller waits silently for
 //              their greeting — no announcements, no fake ring sounds from
 //              the AI. Auto-graded on hangup.
-//   drill    — a 2-4 minute module mini-drill, auto-graded on completion
+//   drill    — the OPTIONAL drill room: coached practice, the coach gives
+//              spoken advice after each answer; never graded or counted
 //   sales    — practice call vs "John" with the script on screen
 //
 // Audio in:  mic -> AudioContext(16kHz) -> PCM16 -> sendRealtimeInput
@@ -116,6 +117,7 @@ export default function InterviewClient({
   drillModule = "",
   drillTitle = "",
   drillIntro = "",
+  drillCapMs = 0,
   sellers = [],
 }: {
   token: string;
@@ -126,6 +128,7 @@ export default function InterviewClient({
   drillModule?: string;
   drillTitle?: string;
   drillIntro?: string;
+  drillCapMs?: number;
   sellers?: DeskSeller[];
 }) {
   const isTraining = mode === "training";
@@ -443,7 +446,7 @@ export default function InterviewClient({
       // Hard cap
       const capTimer = setTimeout(
         () => endSession(true),
-        isDrill ? DRILL_CAP_MS : isTraining ? TRAINING_CAP_MS : SALES_CAP_MS
+        isDrill ? (drillCapMs || DRILL_CAP_MS) : isTraining ? TRAINING_CAP_MS : SALES_CAP_MS
       );
 
       // call duration ticker
@@ -526,7 +529,7 @@ export default function InterviewClient({
           <>
             <p>{drillIntro}</p>
             <p className="small muted">
-              Two to four minutes, graded automatically the moment you finish. Run it as many times as you need.
+              Optional practice — <strong>no pass, no fail, nothing counted</strong>. The coach gives you spoken feedback right after each answer, then the drill ends. Run it as often as you like.
             </p>
           </>
         ) : isTraining ? (
@@ -803,14 +806,13 @@ export default function InterviewClient({
           {agentSpeaking ? "🗣️" : "🎙️"}
         </div>
         <h1 style={{ fontSize: 20 }}>
-          {agentSpeaking ? "Examiner / seller speaking…" : "Your line — speak"}
+          {agentSpeaking ? "Coach / seller speaking…" : "Your line — speak"}
         </h1>
-        <p className="muted small">Drill: {drillTitle}. Graded automatically when it ends.</p>
+        <p className="muted small">{drillTitle} — answer like you&apos;re live; the coach gives feedback after each answer.</p>
         <button
           className="btn btn-ghost"
           onClick={() => {
-            if (window.confirm("End the drill now? An unfinished drill may not be gradeable."))
-              endSession(false);
+            if (window.confirm("End the drill now?")) endSession(false);
           }}
         >
           End drill early
@@ -861,7 +863,7 @@ export default function InterviewClient({
     return (
       <Shell step={step}>
         <h1 style={{ fontSize: 22 }}>
-          {isDrill ? "Grading your drill…" : isTraining ? "Grading your call…" : "Saving your call…"}
+          {isDrill ? "Wrapping up your drill…" : isTraining ? "Grading your call…" : "Saving your call…"}
         </h1>
         <div className="spinner" />
         <p className="muted">Don&apos;t close this tab.</p>
@@ -883,45 +885,17 @@ export default function InterviewClient({
       );
 
     if (isDrill) {
-      const r = autoResult;
       return (
         <Shell step={step}>
-          {r?.graded ? (
-            r.pass ? (
-              <>
-                <h1>✅ Drill passed!</h1>
-                <p>
-                  <span className="pill pill-green" style={{ fontSize: 14 }}>{drillTitle} · {r.summary}</span>
-                </p>
-                {r.coaching && <p className="small muted">Coach&apos;s note: {r.coaching}</p>}
-                <a className="btn" href={`/learn/${token}/${drillModule}`}>Back to my learning path</a>
-              </>
-            ) : (
-              <>
-                <h1>Not yet — run it again</h1>
-                <p>
-                  <span className="pill pill-red" style={{ fontSize: 14 }}>{drillTitle} · {r.summary}</span>
-                </p>
-                {r.reason && <p className="small" style={{ color: "var(--red)" }}>{r.reason}</p>}
-                {r.coaching && <p className="small muted">Coach&apos;s note: {r.coaching}</p>}
-                <div className="row" style={{ justifyContent: "center" }}>
-                  <button className="btn" onClick={() => window.location.reload()}>Run the drill again</button>
-                  <a className="btn btn-ghost" href={`/learn/${token}/${drillModule}`}>Back to the module</a>
-                </div>
-              </>
-            )
-          ) : (
-            <>
-              <h1>Drill saved</h1>
-              <p className="small muted">
-                We couldn&apos;t grade it automatically this time. Run it again, or the team can grade it manually.
-              </p>
-              <div className="row" style={{ justifyContent: "center" }}>
-                <button className="btn" onClick={() => window.location.reload()}>Run the drill again</button>
-                <a className="btn btn-ghost" href={`/learn/${token}/${drillModule}`}>Back to the module</a>
-              </div>
-            </>
-          )}
+          <h1>🎙 Drill done</h1>
+          <p className="small muted">
+            The coach&apos;s feedback was in the call — nothing is scored or counted here. Run another whenever you like.
+          </p>
+          <div className="row" style={{ justifyContent: "center" }}>
+            <a className="btn" href={`/interview/${token}?drill=one`}>⚡ Another quick one</a>
+            <a className="btn btn-secondary" href={`/interview/${token}?drill=three`}>🔁 Three in a row</a>
+            <a className="btn btn-ghost" href={`/learn/${token}`}>My learning path</a>
+          </div>
         </Shell>
       );
     }

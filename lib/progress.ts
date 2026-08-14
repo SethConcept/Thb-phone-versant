@@ -23,12 +23,10 @@ export function pathState(rows: ModuleProgressRow[]): PathState {
   const byModule: Record<string, ModuleProgressRow | undefined> = {};
   for (const r of rows) byModule[r.module_id] = r;
 
+  // Drills are optional coached practice now — quizzes alone gate modules.
   const moduleComplete = (id: string) => {
-    const def = LEARN_MODULES.find((m) => m.id === id);
-    if (!def) return false;
-    const row = byModule[id];
-    if (!row?.quiz_passed) return false;
-    return def.hasDrill ? row.drill_passed : true;
+    if (!LEARN_MODULES.some((m) => m.id === id)) return false;
+    return !!byModule[id]?.quiz_passed;
   };
 
   const unlocked = (id: string) => {

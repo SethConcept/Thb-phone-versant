@@ -6,8 +6,6 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { SCORING_MODEL } from "@/lib/models";
 import { salesScoringPrompt } from "@/lib/sales-prompts";
 import { versantScoringPrompt, versantVerdict } from "@/lib/versant-prompts";
-import { drillScoringPrompt } from "@/lib/drill-prompts";
-import { drillVerdict } from "@/lib/drills";
 import { DRILL_CRITERIA } from "@/lib/academy";
 
 // Admin-only: send a session transcript to Gemini with the matching rubric
@@ -45,6 +43,11 @@ export async function POST(req: Request) {
       { status: 409 }
     );
   const isDrill = isTraining && interview.exam_meta?.kind === "drill";
+  if (isDrill)
+    return NextResponse.json(
+      { error: "Drill-room runs are coached practice — they aren't graded" },
+      { status: 409 }
+    );
 
   const transcriptText = (interview.transcript as any[])
     .map((t) =>
@@ -59,11 +62,9 @@ export async function POST(req: Request) {
   try {
     result = await ai.models.generateContent({
       model: process.env.SCORING_MODEL || SCORING_MODEL,
-      contents: isDrill
-        ? drillScoringPrompt(transcriptText, interview.exam_meta)
-        : isTraining
-          ? versantScoringPrompt(transcriptText, interview.exam_meta)
-          : salesScoringPrompt(transcriptText),
+      contents: isTraining
+        ? versantScoringPrompt(transcriptText, interview.exam_meta)
+        : salesScoringPrompt(transcriptText),
     });
   } catch (e: any) {
     return NextResponse.json(
@@ -82,41 +83,7 @@ export async function POST(req: Request) {
   let row: Record<string, unknown>;
   let verdict: string;
 
-  if (isDrill) {
-    // Mini-drill re-grade — deterministic pass rule per drill kind.
-    const v = drillVerdict(interview.exam_meta, parsed);
-    verdict = v.pass ? "PASS" : "FAIL";
-    row = {
-      interview_id: interviewId,
-      detail: parsed,
-      knockout: (parsed.hard_fails ?? []).length > 0,
-      knockout_reason: v.pass ? null : v.reason,
-      verdict,
-      scored_by: "ai",
-      notes: parsed.coaching_note || null,
-    };
-    if (v.pass) {
-      const { data: existing } = await db
-        .from("module_progress")
-        .select("id, quiz_score, quiz_total, quiz_passed")
-        .eq("candidate_id", interview.candidate_id)
-        .eq("module_id", interview.exam_meta.module)
-        .maybeSingle();
-      await db.from("module_progress").upsert(
-        {
-          candidate_id: interview.candidate_id,
-          module_id: interview.exam_meta.module,
-          quiz_score: existing?.quiz_score ?? null,
-          quiz_total: existing?.quiz_total ?? null,
-          quiz_passed: existing?.quiz_passed ?? false,
-          drill_passed: true,
-          drill_interview_id: interviewId,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "candidate_id,module_id" }
-      );
-    }
-  } else if (isTraining) {
+  if (isTraining) {
     // Certification call — deterministic verdict, the code decides.
     const v = versantVerdict(parsed);
     verdict = v.verdict;

@@ -1,19 +1,17 @@
-// Per-module voice mini-drills — short, focused practice sessions that gate
-// progression through the learning path. Each module (m2–m8) maps to one
-// drill; the full Versant test unlocks when every module is complete.
+// The drill room — OPTIONAL coached practice, never pass/fail and never
+// gating. Draws from the combined question pool built across the whole
+// learning path; the AI coach delivers each seller line, hears the answer,
+// gives short spoken advice on the spot, then moves on (or ends).
 
 import {
   PRESSURE_LINES,
   SHORT_ANSWERS,
-  SELLER_PERSONAS,
   type PressureLine,
   type ShortAnswer,
-  type SellerPersona,
 } from "./academy";
 
-// Extra item pools that exist only for drills (same shape as academy items).
-// The "ten call models" module drills common calls that appear in the full
-// test only as personas; the endings module drills how calls close.
+// Extra pools (same item shape) covering the "ten call models" and endings
+// lessons — part of the drill-room pool and usable as cert weave-ins labels.
 export const MODEL_ITEMS: ShortAnswer[] = [
   {
     id: "just_looking",
@@ -62,212 +60,46 @@ export const ENDING_ITEMS: ShortAnswer[] = [
   },
 ];
 
-// The three empathy personas the m7 drill draws from.
-const EMPATHY_PERSONA_IDS = ["grieving", "quiet", "elderly"] as const;
-
-// ---------------------------------------------------------------------------
-// Drill definitions per module
-// ---------------------------------------------------------------------------
-
-export type DrillKind = "open" | "items" | "persona";
-
-export type DrillDef = {
-  module: string;
-  title: string;
-  kind: DrillKind;
-  intro: string; // one line shown to the trainee before starting
-  // items drills
-  pool?: ShortAnswer[] | PressureLine[];
-  drawCount?: number;
-  // persona drills
-  personaPool?: string[];
-  // persona drills: criteria ids from DRILL_CRITERIA graded for pass
-  personaCriteria?: { id: string; label: string }[];
-};
-
-export const DRILLS: Record<string, DrillDef> = {
-  m2: {
-    module: "m2",
-    title: "The Open",
-    kind: "open",
-    intro: "The phone rings twice. Deliver your full open each time — name, recording line, and don't forget how they heard about us.",
-  },
-  m3: {
-    module: "m3",
-    title: "Pressure lines",
-    kind: "items",
-    intro: "Three lines engineered to bait a banned response. Answer each exactly as you would live.",
-    pool: PRESSURE_LINES,
-    drawCount: 3,
-  },
-  m4: {
-    module: "m4",
-    title: "Seller questions",
-    kind: "items",
-    intro: "Three common seller questions. Answer each one the approved way.",
-    pool: SHORT_ANSWERS.filter((x) => ["scam", "howfast", "howcalc", "fair", "spouse"].includes(x.id)),
-    drawCount: 3,
-  },
-  m5: {
-    module: "m5",
-    title: "The common calls",
-    kind: "items",
-    intro: "Three callers you'll hear every week. Handle each line.",
-    pool: [...MODEL_ITEMS, ...SHORT_ANSWERS.filter((x) => x.id === "juanonly")],
-    drawCount: 3,
-  },
-  m6: {
-    module: "m6",
-    title: "Hard situations",
-    kind: "items",
-    intro: "Three complicated-house situations. Gather — don't diagnose, don't promise.",
-    pool: [
-      ...SHORT_ANSWERS.filter((x) => ["probate", "tenants", "attorney", "howfast"].includes(x.id)),
-      ...PRESSURE_LINES.filter((x) => ["lien", "fees"].includes(x.id)),
-    ],
-    drawCount: 3,
-  },
-  m7: {
-    module: "m7",
-    title: "Being a person",
-    kind: "persona",
-    intro: "A short call with a seller who needs you to be human first. Two to three minutes.",
-    personaPool: [...EMPATHY_PERSONA_IDS],
-    personaCriteria: [
-      { id: "acknowledged", label: "Acknowledged the human moment before returning to the house" },
-      { id: "pace", label: "Matched the caller's pace — no talking over, no filling silence with pitch" },
-      { id: "natural", label: "Sounded like a person, not a script" },
-    ],
-  },
-  m8: {
-    module: "m8",
-    title: "Endings",
-    kind: "items",
-    intro: "Three calls at the moment they end. Land the right next step every time.",
-    pool: [...ENDING_ITEMS, ...PRESSURE_LINES.filter((x) => ["callback", "mailer"].includes(x.id))],
-    drawCount: 3,
-  },
-};
-
-// ---------------------------------------------------------------------------
-// Draw + resolve (stored in interviews.exam_meta for drill attempts)
-// ---------------------------------------------------------------------------
-
-export type DrillDraw = {
-  kind: "drill";
-  module: string;
-  items?: string[]; // item ids (items drills)
-  persona?: string; // persona id (persona drills)
-};
-
-function pickN<T extends { id: string }>(pool: T[], n: number): T[] {
-  const copy = [...pool];
-  const out: T[] = [];
-  while (out.length < n && copy.length) {
-    out.push(copy.splice(Math.floor(Math.random() * copy.length), 1)[0]);
-  }
-  return out;
-}
-
-export function drawDrill(moduleId: string): DrillDraw | null {
-  const def = DRILLS[moduleId];
-  if (!def) return null;
-  if (def.kind === "items") {
-    return {
-      kind: "drill",
-      module: moduleId,
-      items: pickN(def.pool!, def.drawCount ?? 3).map((x) => x.id),
-    };
-  }
-  if (def.kind === "persona") {
-    const id = def.personaPool![Math.floor(Math.random() * def.personaPool!.length)];
-    return { kind: "drill", module: moduleId, persona: id };
-  }
-  return { kind: "drill", module: moduleId }; // open drill needs no draw
-}
-
-const ALL_ITEMS: (ShortAnswer | PressureLine)[] = [
+// Everything the learning path teaches, in one pool.
+export const DRILL_POOL: (PressureLine | ShortAnswer)[] = [
   ...PRESSURE_LINES,
   ...SHORT_ANSWERS,
   ...MODEL_ITEMS,
   ...ENDING_ITEMS,
 ];
 
-export function resolveDrillDraw(draw: DrillDraw): {
-  def: DrillDef;
-  items: (ShortAnswer | PressureLine)[];
-  persona: SellerPersona | null;
-} {
-  const def = DRILLS[draw.module];
-  const items = (draw.items ?? [])
-    .map((id) => ALL_ITEMS.find((x) => x.id === id))
-    .filter(Boolean) as (ShortAnswer | PressureLine)[];
-  const persona = draw.persona
-    ? SELLER_PERSONAS.find((p) => p.id === draw.persona) ?? null
-    : null;
-  return { def, items, persona };
+export type PracticeDraw = {
+  kind: "drill";
+  items: string[]; // 1 or 3 ids from DRILL_POOL
+};
+
+export const PRACTICE_MODES: Record<string, { count: number; title: string; intro: string; capMs: number }> = {
+  one: {
+    count: 1,
+    title: "Quick drill",
+    intro: "One seller line from anywhere in the course. Answer it, get instant coaching, done in a minute.",
+    capMs: 3 * 60 * 1000,
+  },
+  three: {
+    count: 3,
+    title: "Three in a row",
+    intro: "Three seller lines, back to back, from anywhere in the course. Coaching after each answer.",
+    capMs: 6 * 60 * 1000,
+  },
+};
+
+export function drawPractice(mode: string): PracticeDraw {
+  const count = PRACTICE_MODES[mode]?.count ?? 1;
+  const copy = [...DRILL_POOL];
+  const out: string[] = [];
+  while (out.length < count && copy.length) {
+    out.push(copy.splice(Math.floor(Math.random() * copy.length), 1)[0].id);
+  }
+  return { kind: "drill", items: out };
 }
 
-// Deterministic pass rule per drill kind — the grader reports facts, the
-// code decides. Any hard fail always fails the drill.
-export function drillVerdict(
-  draw: DrillDraw,
-  parsed: any
-): { pass: boolean; reason: string; summary: string } {
-  const def = DRILLS[draw.module];
-  const hardFails = Array.isArray(parsed.hard_fails) ? parsed.hard_fails : [];
-  if (hardFails.length > 0)
-    return {
-      pass: false,
-      reason: `Hard fail: ${hardFails.map((h: any) => h.rule).join(", ")}`,
-      summary: "hard fail",
-    };
-
-  if (def.kind === "open") {
-    const a = parsed.part_a ?? {};
-    const ok =
-      a.recording_disclosure === true &&
-      a.name_given === true &&
-      a.source_question === true &&
-      Number(a.delivery) >= 3;
-    return {
-      pass: ok,
-      reason: ok
-        ? ""
-        : [
-            a.recording_disclosure !== true && "missed the recording disclosure",
-            a.name_given !== true && "no name",
-            a.source_question !== true && "never asked how they heard of us",
-            Number(a.delivery) < 3 && "delivery too far from the mandatory open",
-          ]
-            .filter(Boolean)
-            .join("; "),
-      summary: `delivery ${a.delivery ?? "—"}/5`,
-    };
-  }
-
-  if (def.kind === "items") {
-    const items = Array.isArray(parsed.items) ? parsed.items : [];
-    const passed = items.filter((x: any) => x?.pass === true).length;
-    const total = items.length || (draw.items?.length ?? 0);
-    const ok = total > 0 && total - passed <= 1; // max one miss
-    return {
-      pass: ok,
-      reason: ok ? "" : `Missed ${total - passed} of ${total} — max 1 miss`,
-      summary: `${passed}/${total} items`,
-    };
-  }
-
-  // persona
-  const criteria = parsed.criteria ?? {};
-  const list = def.personaCriteria ?? [];
-  const hit = list.filter((c) => criteria[c.id] === true).length;
-  const ok = hit === list.length;
-  return {
-    pass: ok,
-    reason: ok
-      ? ""
-      : `Missed: ${list.filter((c) => criteria[c.id] !== true).map((c) => c.label).join("; ")}`,
-    summary: `${hit}/${list.length} criteria`,
-  };
+export function resolvePractice(draw: PracticeDraw): (PressureLine | ShortAnswer)[] {
+  return draw.items
+    .map((id) => DRILL_POOL.find((x) => x.id === id))
+    .filter(Boolean) as (PressureLine | ShortAnswer)[];
 }
