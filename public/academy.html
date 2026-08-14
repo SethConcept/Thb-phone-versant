@@ -1,0 +1,1019 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THB Phone Academy</title>
+<script>
+  // The courseware was authored against the Claude artifact storage API.
+  // Back it with localStorage so progress persists in this browser.
+  window.storage = {
+    get: function (key) {
+      var v = localStorage.getItem(key);
+      return Promise.resolve(v == null ? null : { value: v });
+    },
+    set: function (key, value) {
+      localStorage.setItem(key, value);
+      return Promise.resolve({ ok: true });
+    },
+  };
+</script>
+</head>
+<body style="margin:0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  #ta {
+    --paper: #F1F4F3; --card: #FFFFFF; --ink: #0F1E22; --ink2: #46565B; --ink3: #7B8A8E;
+    --rule: #D3DCDA; --rule2: #E6ECEA;
+    --deep: #0E4B52; --deep2: #12666F; --stop: #A62B22; --go: #1B6B4A; --hi: #FDF3D8;
+    --disp: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --body: "Barlow", system-ui, -apple-system, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    background: var(--paper); color: var(--ink); font-family: var(--body);
+    font-size: 14.5px; line-height: 1.55; border-radius: 3px; overflow: hidden;
+  }
+  #ta * { box-sizing: border-box; }
+  #ta h1, #ta h2, #ta h3 { font-family: var(--disp); margin: 0; text-transform: uppercase; letter-spacing: .02em; }
+  #ta button { font-family: var(--mono); cursor: pointer; }
+  #ta :focus-visible { outline: 2px solid var(--deep2); outline-offset: 2px; }
+
+  /* masthead */
+  #ta .top { background: var(--deep); color: #EAF3F2; padding: 15px 20px;
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+  #ta .top h1 { font-size: 23px; font-weight: 700; }
+  #ta .top .sub { font-family: var(--mono); font-size: 9.5px; letter-spacing: .15em; text-transform: uppercase; opacity: .62; }
+  #ta .who { display: flex; align-items: center; gap: 8px; }
+  #ta .who label { font-family: var(--mono); font-size: 9px; letter-spacing: .13em; text-transform: uppercase; opacity: .62; }
+  #ta .who select { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.28);
+    color: #EAF3F2; font-family: var(--mono); font-size: 12px; padding: 5px 8px; border-radius: 2px; }
+
+  /* shell */
+  #ta .shell { display: grid; grid-template-columns: 1fr; }
+  @media (min-width: 920px) { #ta .shell { grid-template-columns: 218px 1fr; } }
+  #ta .rail { background: var(--card); border-bottom: 1px solid var(--rule); }
+  @media (min-width: 920px) { #ta .rail { border-bottom: none; border-right: 1px solid var(--rule); min-height: 660px; } }
+  #ta .group { font-family: var(--mono); font-size: 8.5px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--ink3); padding: 14px 16px 6px; display: none; }
+  @media (min-width: 920px) { #ta .group { display: block; } }
+  #ta nav { display: flex; overflow-x: auto; }
+  @media (min-width: 920px) { #ta nav { display: block; overflow: visible; } }
+  #ta nav button { background: none; border: none; border-left: 3px solid transparent;
+    border-bottom: 2px solid transparent; color: var(--ink2); text-align: left;
+    padding: 9px 14px; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
+  @media (min-width: 920px) { #ta nav button { width: 100%; border-bottom: none; white-space: normal; } }
+  #ta nav button:hover { background: var(--rule2); color: var(--ink); }
+  #ta nav button.on { color: var(--deep); background: #E4EEEC; border-bottom-color: var(--deep); }
+  @media (min-width: 920px) { #ta nav button.on { border-bottom-color: transparent; border-left-color: var(--deep); } }
+  #ta nav .nn { font-size: 12.5px; letter-spacing: .04em; text-transform: uppercase; font-weight: 600; }
+  #ta nav .tick { font-family: var(--mono); font-size: 12px; color: var(--go); width: 12px; flex-shrink: 0; }
+
+  #ta .main { min-width: 0; padding: 20px; }
+  #ta .modhead { border-bottom: 2px solid var(--ink); padding-bottom: 10px; margin-bottom: 18px;
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
+  #ta .modhead h2 { font-size: 22px; font-weight: 700; }
+  #ta .modhead .kicker { font-family: var(--mono); font-size: 9px; letter-spacing: .15em;
+    text-transform: uppercase; color: var(--ink3); }
+  #ta .mod { display: none; }
+  #ta .mod.on { display: block; }
+
+  /* content bits */
+  #ta .lede { font-size: 16px; color: var(--ink2); max-width: 70ch; margin-bottom: 18px; }
+  #ta .card { background: var(--card); border: 1px solid var(--rule); padding: 15px 17px; margin-bottom: 14px; }
+  #ta .card h3 { font-size: 15px; margin-bottom: 7px; }
+  #ta .say { background: var(--hi); border-left: 3px solid var(--deep); padding: 10px 13px; margin: 8px 0; font-size: 14.5px; }
+  #ta .why { font-family: var(--mono); font-size: 10.5px; color: var(--ink2); line-height: 1.6; margin: 6px 0 0; }
+  #ta .why.stop { color: var(--stop); }
+  #ta .rulebox { border: 2px solid var(--stop); padding: 14px 16px; margin-bottom: 16px; }
+  #ta .rulebox h3 { color: var(--stop); }
+  #ta .okbox { border: 2px solid var(--go); padding: 14px 16px; margin-bottom: 16px; }
+  #ta .okbox h3 { color: var(--go); }
+  #ta ul, #ta ol { margin: 6px 0; padding-left: 20px; }
+  #ta li { margin-bottom: 4px; }
+
+  #ta table { width: 100%; border-collapse: collapse; }
+  #ta th { font-family: var(--mono); font-size: 8.5px; letter-spacing: .13em; text-transform: uppercase;
+    color: var(--ink3); text-align: left; padding: 0 10px 6px 0; border-bottom: 1px solid var(--rule); }
+  #ta td { padding: 7px 10px 7px 0; border-bottom: 1px solid var(--rule2); font-size: 13.5px; vertical-align: top; }
+  #ta .swap td:first-child { color: var(--stop); text-decoration: line-through; width: 46%; }
+  #ta .swap td:last-child { font-weight: 500; }
+
+  #ta .grid2 { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 800px) { #ta .grid2 { grid-template-columns: 1fr 1fr; } }
+
+  #ta .btn { font-size: 11px; letter-spacing: .11em; text-transform: uppercase; padding: 9px 14px;
+    background: var(--deep); color: #EAF3F2; border: none; border-radius: 2px; font-weight: 500; }
+  #ta .btn:hover { background: var(--deep2); }
+  #ta .btn.g { background: none; border: 1px solid var(--rule); color: var(--ink2); }
+  #ta .btn.g:hover { background: var(--rule2); border-color: var(--ink3); color: var(--ink); }
+  #ta .btn.s { padding: 6px 10px; font-size: 10px; }
+  #ta .btn.done { background: var(--go); }
+  #ta .btnrow { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+
+  #ta .chk { display: flex; gap: 9px; align-items: flex-start; font-size: 14px; cursor: pointer; margin-bottom: 7px; }
+  #ta .chk input { margin: 4px 0 0; accent-color: var(--deep); flex-shrink: 0; }
+
+  #ta .drawcard { border: 2px solid var(--deep); background: var(--card); padding: 16px 18px; margin-bottom: 15px; }
+  #ta .drawcard .kind { font-family: var(--mono); font-size: 9px; letter-spacing: .15em; text-transform: uppercase; color: var(--ink3); }
+  #ta .drawcard .line { font-family: var(--disp); font-size: 21px; font-weight: 600; line-height: 1.25; margin: 6px 0 8px; }
+  #ta .drawcard .watch { font-family: var(--mono); font-size: 10.5px; color: var(--ink2); line-height: 1.6; }
+
+  #ta .scoreline { display: flex; justify-content: space-between; align-items: baseline;
+    border-top: 2px solid var(--ink); padding-top: 11px; margin-top: 12px; gap: 14px; }
+  #ta .scoreline .n { font-family: var(--mono); font-size: 27px; }
+  #ta .scoreline .n.pass { color: var(--go); }
+  #ta .scoreline .n.fail { color: var(--stop); }
+  #ta .note { font-family: var(--mono); font-size: 10.5px; color: var(--ink3); line-height: 1.6; }
+
+  #ta .q { border: 1px solid var(--rule); background: var(--card); padding: 13px 15px; margin-bottom: 11px; }
+  #ta .q .qt { font-weight: 600; margin-bottom: 8px; }
+  #ta .q .opt { display: flex; gap: 9px; align-items: flex-start; font-size: 13.5px; padding: 4px 0; cursor: pointer; }
+  #ta .q .opt input { margin: 4px 0 0; accent-color: var(--deep); flex-shrink: 0; }
+  #ta .q.right { border-color: var(--go); background: #F2FAF6; }
+  #ta .q.wrong { border-color: var(--stop); background: #FDF4F3; }
+  #ta .q .fb { font-family: var(--mono); font-size: 10.5px; margin-top: 8px; display: none; line-height: 1.6; }
+  #ta .q.right .fb, #ta .q.wrong .fb { display: block; }
+  #ta .q.right .fb { color: var(--go); }
+  #ta .q.wrong .fb { color: var(--stop); }
+  #ta .crit { font-family: var(--mono); font-size: 8.5px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--stop); border: 1px solid var(--stop); padding: 1px 5px; margin-left: 7px; }
+
+  #ta .prog { background: var(--card); border: 1px solid var(--rule); padding: 14px 16px; margin-bottom: 13px; }
+  #ta .prog .nm { font-family: var(--disp); font-size: 18px; font-weight: 700; }
+  #ta .bar { height: 7px; background: var(--rule2); margin: 8px 0 4px; }
+  #ta .bar i { display: block; height: 100%; background: var(--deep); }
+  #ta .bar i.full { background: var(--go); }
+  #ta .prow { display: flex; justify-content: space-between; font-family: var(--mono);
+    font-size: 11px; color: var(--ink2); padding: 4px 0; border-bottom: 1px solid var(--rule2); }
+  #ta .prow b { color: var(--ink); font-weight: 500; }
+  #ta .ready { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+    padding: 3px 7px; border: 1px solid var(--go); color: var(--go); }
+  #ta .notready { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+    padding: 3px 7px; border: 1px solid var(--ink3); color: var(--ink3); }
+
+  #ta .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: #EAF3F2; font-family: var(--mono); font-size: 11px;
+    letter-spacing: .08em; text-transform: uppercase; padding: 10px 17px; border-radius: 2px;
+    opacity: 0; transition: opacity .22s; pointer-events: none; z-index: 60; }
+  #ta .toast.on { opacity: 1; }
+
+  /* printable desk card */
+  #ta .dcard { background: #fff; border: 1px solid var(--rule); padding: 20px 22px; }
+  #ta .dhead { display: flex; justify-content: space-between; align-items: flex-end; gap: 14px;
+    border-bottom: 2.5px solid var(--ink); padding-bottom: 8px; margin-bottom: 13px; flex-wrap: wrap; }
+  #ta .dbrand { font-family: var(--mono); font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink3); }
+  #ta .dtitle { font-size: 22px; font-weight: 700; }
+  #ta .dnote { font-family: var(--mono); font-size: 8.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink3); }
+  #ta .dlbl { font-family: var(--mono); font-size: 8.5px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--ink3); border-bottom: 1px solid var(--rule); padding-bottom: 3px; margin-bottom: 7px; }
+  #ta .dopen { border: 2px solid var(--ink); background: var(--hi); padding: 10px 12px; margin-bottom: 12px; }
+  #ta .dopen p { margin: 0; font-size: 13.5px; font-weight: 500; }
+  #ta .dsmall { font-family: var(--mono); font-size: 9.5px; color: var(--ink2); font-weight: 400; }
+  #ta .dstop { border: 2px solid var(--stop); padding: 10px 12px; margin-bottom: 13px; }
+  #ta .dstop ul { margin: 0; padding-left: 16px; }
+  #ta .dstop li { font-size: 12.5px; margin-bottom: 2px; }
+  #ta .dcols { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 780px) { #ta .dcols { grid-template-columns: 1fr 1fr; gap: 0 22px; } }
+  #ta .dswap td, #ta .dspcta td { font-size: 12px; padding: 5px 8px 5px 0; border-bottom: 1px solid var(--rule2); vertical-align: top; }
+  #ta .dswap td:first-child { color: var(--stop); text-decoration: line-through; width: 42%; }
+  #ta .dspcta td:first-child { font-family: var(--disp); font-size: 17px; font-weight: 700; width: 20px; text-decoration: none; color: var(--ink); }
+  #ta .dgate { border: 2px solid var(--go); padding: 9px 11px; margin-top: 12px; }
+  #ta .dgate ol { margin: 0; padding-left: 17px; font-size: 12.5px; }
+  #ta .dgate p { margin: 6px 0 0; }
+  #ta .dfoot { border-top: 2.5px solid var(--ink); margin-top: 13px; padding-top: 8px;
+    font-family: var(--mono); font-size: 9.5px; color: var(--ink2); line-height: 1.6; }
+
+  @media print {
+    #ta .top, #ta .rail, #ta .modhead, #ta .lede, #ta .btnrow, #ta .toast { display: none !important; }
+    #ta, #ta .main, #ta .shell { background: #fff; padding: 0; display: block; }
+    #ta .mod { display: none !important; }
+    #ta .mod[data-m="card"] { display: block !important; }
+    #ta .dcard { border: none; padding: 0; }
+    #ta .dcols { grid-template-columns: 1fr 1fr; gap: 0 18px; }
+    #ta .dswap td, #ta .dspcta td, #ta .dstop li, #ta .dgate ol { font-size: 9.5px; }
+    #ta .dopen p { font-size: 11px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) { #ta * { transition: none !important; } }
+</style>
+
+<div id="ta">
+
+  <div class="top">
+    <div>
+      <div class="sub">Twin Home Buyer &middot; Iriga desk &middot; seller call certification</div>
+      <h1>Phone Academy</h1>
+    </div>
+    <div class="who">
+      <label for="who">Studying as</label>
+      <select id="who"></select>
+    </div>
+  </div>
+
+  <div class="shell">
+    <aside class="rail">
+      <div class="group">Learn</div>
+      <nav id="nav"></nav>
+    </aside>
+
+    <main class="main">
+      <div class="modhead">
+        <div><div class="kicker" id="kick">Module 1 of 8</div><h2 id="mTitle">Start here</h2></div>
+        <button class="btn g s" id="bDone">Mark complete</button>
+      </div>
+
+      <!-- ============ M1 ============ -->
+      <div class="mod on" data-m="m1">
+        <p class="lede">You are not learning a script. You are learning to recognise which kind of seller is on the phone and move them one step forward. The words are guardrails, not the conversation.</p>
+        <div class="okbox">
+          <h3>What a good call actually does</h3>
+          <ol>
+            <li>Gets answered fast, by a real person, using their real name.</li>
+            <li>Tells the caller the line is recorded, before anything else is collected.</li>
+            <li>Finds out how they heard about us, in their own words.</li>
+            <li>Understands the situation, the house, the condition, and the timing.</li>
+            <li>Ends with a next step the seller agreed to &mdash; a live handoff or two named times.</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h3>Six rules that never change</h3>
+          <ul>
+            <li>Answer fast. A ringing phone is the most expensive thing in this company.</li>
+            <li>Never lead with price, and never give one.</li>
+            <li>Qualify in a natural order, not as a form to fill.</li>
+            <li>Acknowledge anything human &mdash; a dog, a spouse, a death, stress &mdash; before returning to the house.</li>
+            <li>Juan being out in the field is normal and it is a strength. He is a licensed contractor looking at real houses.</li>
+            <li>When you are unsure: gather more, promise less.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Who does what</h3>
+          <table><tbody>
+            <tr><td><b>Thea, Trining</b></td><td>Answer, build trust, qualify, book or hand off. You are the first voice of the company.</td></tr>
+            <tr><td><b>Cherry</b></td><td>Closer. Qualified sellers come to her live. She also grades your drills.</td></tr>
+            <tr><td><b>Juan</b></td><td>Owner, licensed contractor, CSLB. He walks the property. He takes escalations and callers who ask for him by name.</td></tr>
+          </tbody></table>
+        </div>
+      </div>
+
+      <!-- ============ M2 ============ -->
+      <div class="mod" data-m="m2">
+        <p class="lede">The first fifteen seconds are the only part of the call that is word for word. Everything after it is judgement. This part is not.</p>
+        <div class="card">
+          <h3>The open</h3>
+          <div class="say">"Thank you for calling Twin Home Buyer, this is <b>[your first name]</b>. This call is recorded for quality. Are you calling about a property you're thinking about selling?"</div>
+          <p class="why">Your real first name. Never an alias, never an American nickname. You are on Juan's team and that is something to say with confidence.</p>
+          <p class="why stop">The recording line comes before you collect anything. California requires everyone on a call to know it is recorded. Leaving it out is an automatic failure.</p>
+        </div>
+        <div class="card">
+          <h3>The question that pays for the advertising</h3>
+          <div class="say">"Before I forget &mdash; how did you come across us?"</div>
+          <p class="why">Ask every caller, every time, early. Then type <b>their words</b>, not your interpretation. "Saw the guy on channel 2" is the answer. "TV" is not.</p>
+          <p class="why">We promised our television provider that a person listens to every call and decides which advertising earned it. That promise lives or dies on this one question.</p>
+        </div>
+        <div class="card">
+          <h3>"Are you guys local?"</h3>
+          <div class="say">"Our office is in San Carlos &mdash; 170 Glenn Way. I'm on Juan's team; he's the owner and he's the one who'll walk the property with you."</div>
+          <p class="why stop">Never state or imply where you are sitting. True, specific, and about the company. Automatic failure if you claim a location.</p>
+        </div>
+      </div>
+
+      <!-- ============ M3 ============ -->
+      <div class="mod" data-m="m3">
+        <p class="lede">These sentences have appeared in draft scripts and every one of them is banned. Learn the replacement, not the rule &mdash; mid-call you will reach for what you practised.</p>
+        <div class="rulebox">
+          <h3>Why the price rule is absolute</h3>
+          <p>If you say "homes around there sold around nine hundred," the seller hears nine hundred and holds it. Juan walks the real house and says seven fifty. Now he looks dishonest and we lose a seller we already paid to reach. You did not help them. You cost them the deal and cost us the appointment.</p>
+          <p class="why stop">This includes ballparks, ranges, hypotheticals, Redfin, Zillow, and any nearby sale. There is no version of naming a number that is safe.</p>
+        </div>
+        <table class="swap">
+          <thead><tr><th>Never say</th><th>Say instead</th></tr></thead>
+          <tbody>
+            <tr><td>"I can pull up Redfin or Zillow and tell you what sold nearby."</td><td>"A number without seeing the house isn't worth much to you."</td></tr>
+            <tr><td>"Juan bought one three blocks from you for [amount]."</td><td>"He'll show you what he's seeing when he's standing there."</td></tr>
+            <tr><td>"What if I said $400,000 and it only needed $10,000 of work&hellip;"</td><td>"An offer without seeing it wouldn't mean anything. He needs fifteen minutes."</td></tr>
+            <tr><td>"Zillow is wrong 80% of the time."</td><td>"Zillow's a starting point. It can't see inside your house."</td></tr>
+            <tr><td>"He'll give you an offer right there on the spot."</td><td>"He'll tell you where he stands right there."</td></tr>
+            <tr><td>"I promise, Juan takes every call personally."</td><td>"I work with him directly and I'll get this straight to him."</td></tr>
+            <tr><td>"He'll call you back within 15 minutes."</td><td>"He can call you at 4:15 or 5:30 &mdash; which is better?"</td></tr>
+            <tr><td>"Zero fees. The offer is the number on your check."</td><td>"We cover standard closing costs and there's no commission. Anything owed on the property &mdash; loan, liens, back taxes &mdash; still gets paid from the sale, and Juan will walk you through what you actually net."</td></tr>
+            <tr><td>"Sometimes we can negotiate the lien down."</td><td>"Juan will pull title and find out what's actually owed."</td></tr>
+            <tr><td>"The number today might not be the number next month."</td><td>Nothing. Never manufacture urgency &mdash; theirs is real or it isn't.</td></tr>
+            <tr><td>"I'm so sorry about your mother &mdash; that's exactly why we make this easy."</td><td>"I'm sorry. Take your time." Then stop talking.</td></tr>
+            <tr><td>"Juan's in your neighborhood right now."</td><td>"Let me find out when he can get out there."</td></tr>
+          </tbody>
+        </table>
+        <div class="rulebox" style="margin-top:16px">
+          <h3>And one rule about ending calls</h3>
+          <p>Nobody is kept on the line because they would not book. Every call ends with a step <b>they agreed to</b> &mdash; a handoff, two named times, or a polite goodbye. Pressuring a grieving or frightened homeowner is how a good company earns a reputation it cannot undo.</p>
+        </div>
+      </div>
+
+      <!-- ============ M4 ============ -->
+      <div class="mod" data-m="m4">
+        <p class="lede">Five moves, in a natural order. This is a shape, not a form. Never lose a seller because a field was empty.</p>
+        <div class="card">
+          <table><tbody>
+            <tr><td style="width:34px"><b style="font-family:var(--disp); font-size:19px">S</b></td>
+                <td><b>Situation.</b> "What's got you thinking about selling?"</td></tr>
+            <tr><td><b style="font-family:var(--disp); font-size:19px">P</b></td>
+                <td><b>Property.</b> "Tell me a little about the house."</td></tr>
+            <tr><td><b style="font-family:var(--disp); font-size:19px">C</b></td>
+                <td><b>Condition.</b> "Anything you know needs attention? Roof, foundation, plumbing?"</td></tr>
+            <tr><td><b style="font-family:var(--disp); font-size:19px">T</b></td>
+                <td><b>Timing.</b> "If it all made sense, when would you want this handled?"</td></tr>
+            <tr><td><b style="font-family:var(--disp); font-size:19px">A</b></td>
+                <td><b>Appointment.</b> "Tuesday at 3, or Wednesday at 11?"</td></tr>
+          </tbody></table>
+        </div>
+        <div class="card">
+          <h3>Questions that tell you the most</h3>
+          <table>
+            <thead><tr><th>Ask</th><th>What it tells you</th></tr></thead>
+            <tbody>
+              <tr><td>"How long have you been thinking about selling?"</td><td>Two years is curiosity. Since yesterday is urgency.</td></tr>
+              <tr><td>"What made you reach out today?"</td><td>The real reason. Divorce, a death, a transfer, tenants.</td></tr>
+              <tr><td>"Is anyone living there, or is it empty?"</td><td>Vacant is usually motivated. Tenants mean complications.</td></tr>
+              <tr><td>"Is there still a loan on it? Do you know roughly what's owed?"</td><td>Whether a deal is even possible. If they owe more than the house is worth, everything changes.</td></tr>
+              <tr><td>"Are you the only owner, or is someone else part of the decision?"</td><td>Probate, siblings, an ex-spouse. Everyone needs to be at the visit.</td></tr>
+              <tr><td>"If this could close in a couple of weeks, would that help?"</td><td>Real motivation versus curiosity.</td></tr>
+            </tbody>
+          </table>
+          <p class="why">Price rides inside the conversation: "Do you have a number you'd feel comfortable with?" If they won't answer, move on and let Juan handle it.</p>
+        </div>
+      </div>
+
+      <!-- ============ M5 ============ -->
+      <div class="mod" data-m="m5">
+        <p class="lede">Ten calls you will get over and over. The pattern is always the same: answer what they asked, acknowledge it, advance one step. Then stop selling.</p>
+        <div id="modelsWrap"></div>
+      </div>
+
+      <!-- ============ M6 ============ -->
+      <div class="mod" data-m="m6">
+        <p class="lede">Complicated houses are not bad leads. They are often the reason someone called us instead of a realtor. Gather, do not diagnose.</p>
+        <div class="grid2" id="situWrap"></div>
+      </div>
+
+      <!-- ============ M7 ============ -->
+      <div class="mod" data-m="m7">
+        <p class="lede">You are buying somebody's home, not taking an order. Twenty seconds of being a person is often what earns the visit.</p>
+        <div class="card">
+          <h3>The dog, the grandkids, the weather</h3>
+          <div class="say">"No worries at all &mdash; we love dogs. What's his name? &hellip; That's great. So you were telling me about the house."</div>
+          <p class="why">Acknowledge, connect for ten seconds, return. Efficiency does not mean cutting people off.</p>
+        </div>
+        <div class="card">
+          <h3>Grief</h3>
+          <div class="say">"I'm sorry. Take your time."</div>
+          <p class="why stop">Then stop talking and let the silence sit. Never use a death as a bridge into the pitch. If they want to tell you about the house, they will.</p>
+        </div>
+        <div class="card">
+          <h3>An older caller who is hard of hearing</h3>
+          <p class="why">Slow down. Shorter sentences. Repeat your name and the company twice. Do not rush the open, and do not raise your speed when they ask you to repeat something &mdash; lower it.</p>
+        </div>
+        <div class="card">
+          <h3>The caller who barely speaks</h3>
+          <p class="why">Open questions only, then wait. Silence is not a no. Do not fill the space with pitch &mdash; that is when people hang up.</p>
+        </div>
+        <div class="card">
+          <h3>"Is this a scam? How do I know you're real?"</h3>
+          <div class="say">"That's a fair question and you should ask everyone it. We're Twin Home Buyer, our office is at 170 Glenn Way in San Carlos, Juan Diaz is the owner, and we're BBB accredited. You can look all of that up right now while we talk. And we never ask you for money &mdash; it goes the other direction."</div>
+          <p class="why stop">Calm and factual, never defensive. Only cite numbers you know are true &mdash; never invent a deal count or a license number.</p>
+        </div>
+      </div>
+
+      <!-- ============ M8 ============ -->
+      <div class="mod" data-m="m8">
+        <p class="lede">Two jobs at the end of every call: decide where the seller goes, and leave a record that means something.</p>
+        <div class="okbox">
+          <h3>Four things before a live handoff</h3>
+          <ol>
+            <li>The property is in our footprint.</li>
+            <li>They are on title, or they explained clearly who is.</li>
+            <li>Their motivation is stated and real.</li>
+            <li>They are willing to talk price with a closer now.</li>
+          </ol>
+          <p class="why">All four and a closer is on shift &mdash; transfer live, do not take a message. Anything less, or no closer on &mdash; two specific times: "He can call you at 4:15 or 5:30, which works?"</p>
+          <p class="why stop">A promised time is a promise. If you say 4:15, someone calls at 4:15. A missed promised callback is an automatic failure.</p>
+        </div>
+        <div class="card">
+          <h3>Log it, including the ones you miss</h3>
+          <ul>
+            <li>Every call goes in the desk, with the number they dialed and their exact words about how they heard of us.</li>
+            <li>A missed call nobody logs is the most expensive call of the day, because it disappears and we learn nothing.</li>
+            <li>Never enter a price, an estimate, or an offer. There is no field for it and there is no reason for it.</li>
+          </ul>
+        </div>
+        <div class="rulebox">
+          <h3>The one call you stop immediately</h3>
+          <p>If a caller mentions a letter, a mailer, or a check amount and says it does not match &mdash; stop. Take their best number, tell them the right person will call, and route it now.</p>
+          <p class="why stop">Do not explain. Do not guess. Do not discuss the difference, no matter how they ask or how reasonable it sounds. This one is not a judgement call.</p>
+        </div>
+      </div>
+
+
+      <!-- ============ PRINT CARD ============ -->
+      <div class="mod" data-m="card">
+        <p class="lede">Print this and tape it where you sit. It is the whole course on one page &mdash; the open, the banned lines, the gate. Use your browser's print option.</p>
+        <div class="btnrow" style="margin:0 0 18px">
+          <button class="btn" id="bPrint">Print this card</button>
+        </div>
+
+        <div id="deskcard">
+          <div class="dcard">
+            <div class="dhead">
+              <div><div class="dbrand">Twin Home Buyer &middot; 170 Glenn Way, San Carlos</div><h3 class="dtitle">Seller call card</h3></div>
+              <div class="dnote">Keep next to the phone</div>
+            </div>
+
+            <div class="dopen">
+              <div class="dlbl">Say this exactly, every call</div>
+              <p>&ldquo;Thank you for calling Twin Home Buyer, this is <b>[your first name]</b>. This call is recorded for quality. Are you calling about a property you're thinking about selling?&rdquo;</p>
+              <p style="margin:7px 0 0">&ldquo;Before I forget &mdash; how did you come across us?&rdquo; <span class="dsmall">Type their exact words.</span></p>
+            </div>
+
+            <div class="dstop">
+              <div class="dlbl" style="color:var(--stop)">Four things that end a call badly</div>
+              <ul>
+                <li><b>No price.</b> No range, no ballpark, no comp, no Redfin, no hypothetical figure.</li>
+                <li><b>No promised offer.</b> "He'll tell you where he stands," never "on the spot."</li>
+                <li><b>Never say where you are.</b> The office is San Carlos, 170 Glenn Way.</li>
+                <li><b>Never discuss a mailer or check amount.</b> Stop, take the number, route it.</li>
+              </ul>
+            </div>
+
+            <div class="dcols">
+              <div>
+                <div class="dlbl">Say this instead</div>
+                <table class="dswap"><tbody>
+                  <tr><td>Redfin or Zillow figures</td><td>"A number without seeing the house isn't worth much to you."</td></tr>
+                  <tr><td>"A house nearby sold for&hellip;"</td><td>"He'll show you what he's seeing when he's there."</td></tr>
+                  <tr><td>"What if I said $400,000&hellip;"</td><td>"An offer without seeing it wouldn't mean anything."</td></tr>
+                  <tr><td>"Zillow's wrong 80% of the time"</td><td>"Zillow's a starting point. It can't see inside."</td></tr>
+                  <tr><td>"Offer right there on the spot"</td><td>"He'll tell you where he stands right there."</td></tr>
+                  <tr><td>"Juan takes every call personally"</td><td>"I work with him directly."</td></tr>
+                  <tr><td>"He'll call within 15 minutes"</td><td>"4:15 or 5:30 &mdash; which is better?"</td></tr>
+                  <tr><td>"Zero fees, the offer is your check"</td><td>"No commission, we cover standard closing costs &mdash; anything owed still comes out of the sale."</td></tr>
+                  <tr><td>"We can negotiate the lien down"</td><td>"Juan will pull title and see what's owed."</td></tr>
+                  <tr><td>"The number may change next month"</td><td>Nothing. Never manufacture urgency.</td></tr>
+                  <tr><td>"Sorry about your mother &mdash; that's why&hellip;"</td><td>"I'm sorry. Take your time." Then stop.</td></tr>
+                  <tr><td>"Juan's in your neighborhood now"</td><td>"Let me find out when he can get there."</td></tr>
+                </tbody></table>
+              </div>
+              <div>
+                <div class="dlbl">The five moves</div>
+                <table class="dspcta"><tbody>
+                  <tr><td>S</td><td>"What's got you thinking about selling?"</td></tr>
+                  <tr><td>P</td><td>"Tell me a little about the house."</td></tr>
+                  <tr><td>C</td><td>"Anything you know needs attention?"</td></tr>
+                  <tr><td>T</td><td>"If it all made sense, when would you want this handled?"</td></tr>
+                  <tr><td>A</td><td>"Tuesday at 3, or Wednesday at 11?"</td></tr>
+                </tbody></table>
+
+                <div class="dlbl" style="margin-top:12px">Most common calls</div>
+                <table class="dswap"><tbody>
+                  <tr><td>"I want Juan"</td><td>"He's out at a property. I work with him directly &mdash; tell me what's going on."</td></tr>
+                  <tr><td>"What will you pay?"</td><td>Answer, explain, advance. Then stop selling.</td></tr>
+                  <tr><td>"I want a million"</td><td>"How did you arrive at that number?"</td></tr>
+                  <tr><td>"Just looking"</td><td>"How long have you been thinking about it? What's making you consider it now?"</td></tr>
+                  <tr><td>"Needs a lot of work"</td><td>"What are you dealing with?" Never diagnose.</td></tr>
+                  <tr><td>Barking dog</td><td>Acknowledge 10 seconds, then return to the house.</td></tr>
+                </tbody></table>
+
+                <div class="dgate">
+                  <div class="dlbl" style="color:var(--go)">Four things before a live handoff</div>
+                  <ol>
+                    <li>In our footprint</li>
+                    <li>On title, or explained who is</li>
+                    <li>Motivation stated and real</li>
+                    <li>Willing to talk price with a closer now</li>
+                  </ol>
+                  <p class="dsmall">All four and a closer is on &mdash; transfer live. Otherwise two named times, logged. A promised time is a promise.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="dfoot">
+              Every call ends with something they agreed to. Nobody is kept on the line.
+              &nbsp;&middot;&nbsp; Log every call including the ones you miss.
+              &nbsp;&middot;&nbsp; Unsure? Gather more, promise less.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ DRILLS ============ -->
+      <div class="mod" data-m="drill">
+        <p class="lede">You will not know which seller you are getting. That is the point &mdash; a real caller does not announce their type.</p>
+        <div class="drawcard" id="drawCard">
+          <div class="kind" id="dKind">Nothing drawn yet</div>
+          <div class="line" id="dLine">Press Draw a seller.</div>
+          <div class="watch" id="dWatch">Say the words out loud. Reading silently does not build the reflex.</div>
+        </div>
+        <div class="btnrow" style="margin-top:0">
+          <button class="btn" id="bDraw">Draw a seller</button>
+          <button class="btn g" id="bDraw3">Draw three in a row</button>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <h3>Grade the run</h3>
+          <div id="dqWrap"></div>
+        </div>
+        <div class="rulebox">
+          <h3>Any of these fails the run outright</h3>
+          <div id="dhWrap"></div>
+        </div>
+        <div class="scoreline">
+          <div><div class="kicker" style="font-family:var(--mono); font-size:9px; letter-spacing:.15em; text-transform:uppercase; color:var(--ink3)">Result</div>
+            <div class="note" id="dVerdict">Pass needs 8 of 10 and no hard fail.</div></div>
+          <div class="n pass" id="dScore">10</div>
+        </div>
+        <div class="btnrow">
+          <button class="btn" id="bSaveDrill">Log this run</button>
+          <button class="btn g" id="bResetDrill">Reset grade</button>
+        </div>
+      </div>
+
+      <!-- ============ EXAM ============ -->
+      <div class="mod" data-m="exam">
+        <p class="lede">Fifteen questions. Pass at twelve. Miss any question marked critical and the attempt fails regardless of the total &mdash; those are the ones that end up on a recording.</p>
+        <div id="examWrap"></div>
+        <div class="scoreline">
+          <div><div class="note" id="eVerdict">Answer every question, then submit.</div></div>
+          <div class="n" id="eScore">&mdash;</div>
+        </div>
+        <div class="btnrow">
+          <button class="btn" id="bSubmit">Submit attempt</button>
+          <button class="btn g" id="bRetake">Start over</button>
+        </div>
+      </div>
+
+      <!-- ============ PROGRESS ============ -->
+      <div class="mod" data-m="prog">
+        <p class="lede">Certification takes all eight modules, twelve passed drills across six different seller types, and one passed exam. Breadth is required because a pass count alone gets gamed.</p>
+        <div id="progWrap"></div>
+        <div class="card">
+          <h3>Recent drill runs</h3>
+          <table><thead><tr><th>When</th><th>Who</th><th>Seller</th><th>Result</th></tr></thead><tbody id="runLog"></tbody></table>
+          <p class="note" id="runEmpty">No runs logged yet.</p>
+        </div>
+        <div class="btnrow"><button class="btn g s" id="bWipe">Reset all training data</button></div>
+      </div>
+
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var KEY = "academy:v1";
+  var SHARED = true;
+
+  var PEOPLE = ["Thea", "Trining", "Cherry"];
+
+  var NAV = [
+    { m: "m1", label: "Start here", group: "Learn" },
+    { m: "m2", label: "How every call opens", group: "Learn" },
+    { m: "m3", label: "Never say this", group: "Learn" },
+    { m: "m4", label: "S \u00b7 P \u00b7 C \u00b7 T \u00b7 A", group: "Learn" },
+    { m: "m5", label: "The ten call models", group: "Learn" },
+    { m: "m6", label: "Hard situations", group: "Learn" },
+    { m: "m7", label: "Being a person", group: "Learn" },
+    { m: "m8", label: "The gate and the log", group: "Learn" },
+    { m: "card", label: "Desk card to print", group: "Learn" },
+    { m: "drill", label: "Drill room", group: "Practice" },
+    { m: "exam", label: "Certification exam", group: "Practice" },
+    { m: "prog", label: "Progress", group: "Track" }
+  ];
+  var MODULES = ["m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "card"];
+  var TITLES = {};
+  NAV.forEach(function (n) { TITLES[n.m] = n.label; });
+
+  var MODELS = [
+    ["\u201cI want to speak with Juan.\u201d",
+     "Absolutely. Juan's out at a property right now. I work with him directly \u2014 tell me what's going on with the house and I'll get him everything he needs, then get you connected.",
+     "Do not fight for control and do not hold him behind twenty questions. Capture, then route to Cherry with a warm introduction. Never claim you can see where he is."],
+    ["\u201cJust tell me what you'll pay.\u201d",
+     "I understand. The hard part is that a number without seeing the property isn't worth much to you. Juan's a licensed contractor \u2014 CSLB \u2014 and he's been at this over twenty years. He can look at it and tell you where he stands. Would today or tomorrow be better?",
+     "Answer, explain, advance. Then stop. Do not argue the point for fifteen minutes and never reach for comps."],
+    ["\u201cI want a million for it.\u201d",
+     "Okay. How did you arrive at that number?",
+     "Never react to the number. Zillow, a neighbour's sale, what they owe, and what they need to relocate are four completely different problems."],
+    ["\u201cI'm just looking.\u201d",
+     "No pressure at all \u2014 a lot of people who call are still figuring out options. How long have you been thinking about it? \u2026 And what's making you consider it now?",
+     "This is where the real reason appears. Do not write them off as a bad lead."],
+    ["\u201cSomething happened, I need to move fast.\u201d",
+     "It sounds like you want this handled quickly. Let me get the address, your best number, and what's going on \u2014 then let me get someone to you today.",
+     "Hot. Minimum information, fast handoff. Never run a full questionnaire on a seller who is ready now."],
+    ["\u201cI'm talking to other investors.\u201d",
+     "That makes sense, you should know your options. Has any of them actually seen the property? Have you gotten anything in writing?",
+     "Never attack a competitor. The goal is eyes on the property before they decide."],
+    ["\u201cMy realtor says I can get more.\u201d",
+     "That's certainly possible \u2014 they're two different options. What matters more to you: the highest possible price, or certainty and less work?",
+     "Ask a question. Do not recite a list of cash-offer benefits."],
+    ["\u201cThe house needs a lot of work.\u201d",
+     "That's fine, we look at properties in every condition. When you say a lot of work \u2014 what are you dealing with?",
+     "Let them talk. Never diagnose foundation, roof, or permits over the phone."],
+    ["\u201cI don't want anyone coming to my house.\u201d",
+     "Completely understandable. Is there something in particular you're concerned about?",
+     "Tenants, embarrassment, strangers inside, or simply not ready are different problems. Solve the real one instead of pushing the calendar."],
+    ["\u201cJust email me the offer.\u201d",
+     "I understand wanting it in writing. The trouble is a number sent without seeing the house isn't worth anything to either of us. Fifteen minutes with Juan and you'll have something real. What day works?",
+     "Never name figures to illustrate the point. No \u201cwhat if I said four hundred thousand.\u201d That is the exact mistake."]
+  ];
+
+  var SITUATIONS = [
+    ["It's in probate",
+     "Juan works on probate and inherited properties often. Where are you in the process, and is there an attorney involved?",
+     "Ask who is on title and whether all the heirs agree. That matters more than the price does."],
+    ["There's a tax lien or back taxes",
+     "That's more common than you'd think. Juan will pull a title report and find out what's actually owed.",
+     "Never say we can reduce or negotiate a lien. You do not know that and it is not yours to promise."],
+    ["I have tenants",
+     "Are they month to month or on a lease? Juan buys tenant-occupied properties, so it doesn't have to be complicated. What's the situation?",
+     "Find out if rent is being paid and whether anything has been filed. Do not give advice about evictions."],
+    ["How fast can you close?",
+     "It can be quick when you need it to be, and we work to your timeline rather than ours. What were you hoping for?",
+     "Do not invent a specific number of days. Juan sets the closing date."],
+    ["Are there any fees?",
+     "There's no commission and we cover the standard closing costs. Anything owed on the property \u2014 a loan, liens, back taxes \u2014 still comes out of the sale, and Juan will walk you through what you actually net.",
+     "Never say the offer is the number on their check. For most sellers that is untrue."],
+    ["I need to talk to my spouse",
+     "Of course. Would it help if Juan came when you're both there? That way you hear the same thing at the same time.",
+     "Turn the delay into a scheduling question. Everyone on title should be at the visit."],
+    ["My attorney is handling it",
+     "No problem, Juan works with attorneys regularly. Can I get their name and number so he can reach out and be prepared?",
+     "Good sign, not an obstacle. Get the contact."],
+    ["How do I know the number is fair?",
+     "Juan will walk the property with you and explain how he got there. You can take it, counter, or walk away.",
+     "Explain the process, never the number."]
+  ];
+
+  var DQ = [
+    "Answered the question they actually asked",
+    "Sounded natural, not read",
+    "Acknowledged what the homeowner said",
+    "Discovered motivation",
+    "Understood condition",
+    "Understood timeline",
+    "Recognised urgency correctly",
+    "Did not argue about price",
+    "Attempted a specific next step",
+    "Knew when a closer should take over"
+  ];
+  var DH = [
+    "Gave a price, range, comp, or Redfin figure",
+    "Named any dollar amount, even as a hypothetical",
+    "Promised an offer on the spot, or stated own location",
+    "Invented a statistic, a deal count, or a licence number",
+    "Said the offer equals what the seller nets",
+    "Pressured the seller to stay on the line, or manufactured urgency",
+    "Discussed a mailer or check amount instead of routing it"
+  ];
+
+  var SELLERS = [
+    ["Juan only", "\u201cI want to speak with Juan.\u201d", "Capture, then route to Cherry with a warm intro. Never overqualify a name-ask."],
+    ["Give me a number", "\u201cJust tell me what you'll pay.\u201d", "Answer, explain, advance. No comps, no range, no hypothetical figures."],
+    ["Million-dollar expectation", "\u201cI want a million for it.\u201d", "Never react. Ask how they got there, then listen."],
+    ["Zillow believer", "\u201cZillow says it's worth 1.2.\u201d", "Do not attack Zillow with invented statistics. It's a starting point that can't see inside."],
+    ["Just looking", "\u201cI'm just kind of looking around.\u201d", "Not a bad lead. How long, and what's making them consider it now."],
+    ["Ready immediately", "\u201cSomething happened, I need to sell fast.\u201d", "Hot. Minimum information, fast escalation."],
+    ["Shopping investors", "\u201cI'm talking to three other buyers.\u201d", "Don't attack competitors. Has anyone seen it? Anything in writing?"],
+    ["Realtor says more", "\u201cMy agent says I can get more listing it.\u201d", "Highest price, or certainty and less work? Make it a real question."],
+    ["Needs everything", "\u201cThe house needs a lot of work.\u201d", "Let them describe it. Never diagnose construction over the phone."],
+    ["Email me the offer", "\u201cJust send me something in writing first.\u201d", "Explain why it would be meaningless. Never illustrate with dollar figures."],
+    ["Nobody in my house", "\u201cI don't want strangers walking through.\u201d", "Ask what specifically concerns them. Solve the real objection."],
+    ["Probate, two siblings", "\u201cMy mother passed and my brother and I own it now.\u201d", "Title and agreement come before price. Is everyone on board?"],
+    ["Behind on payments", "\u201cI'm a few months behind and I got a letter.\u201d", "Slow down. Promise nothing about stopping anything. Gather and escalate."],
+    ["Tired landlord", "\u201cMy tenants stopped paying and I'm done.\u201d", "Lease or month to month? Anything filed? No eviction advice."],
+    ["Elderly, hard of hearing", "\u201cSorry, can you say that again? I saw the fella on television.\u201d", "Slower, shorter, repeat your name. Do not speed up when asked to repeat."],
+    ["Skeptical engineer", "\u201cHow exactly do you calculate your offer?\u201d", "Honest about process. Never invent a formula or a percentage."],
+    ["Divorce", "\u201cWe're splitting up and this has to be sold.\u201d", "Both on title? Both agreed? Neutral, no side-taking."],
+    ["Relocating", "\u201cI start a job in Arizona in six weeks.\u201d", "Timeline is the lever. Confirm the real deadline."],
+    ["Is this a scam", "\u201cHow did you get my information? Is this a scam?\u201d", "Calm and factual. Company, address, owner. Never defensive, never invented numbers."],
+    ["Vacant inherited, out of state", "\u201cIt's been empty two years and I live in Nevada.\u201d", "Access and condition unknown. Who has keys?"],
+    ["Very quiet", "\u201c\u2026yeah. Uh huh.\u201d", "Open questions, then wait. Silence is not a no. Do not fill it with pitch."],
+    ["Grieving", "\u201cIt was my mom's house. She passed in March.\u201d", "\u201cI'm sorry. Take your time.\u201d Then stop. Never pivot off grief."],
+    ["Mailer discrepancy", "\u201cYour letter said a specific amount. Why is that different?\u201d", "HARD STOP. Route immediately. Do not engage, explain, or speculate."],
+    ["Wants a fee breakdown", "\u201cSo what comes out of my end at closing?\u201d", "No commission, we cover standard closing costs, but anything owed still comes out of the sale."]
+  ];
+
+  var EXAM = [
+    ["A caller asks what similar houses in her area sold for. What do you say?",
+     ["Pull up Redfin and give her a general range", "\u201cA number without seeing the house isn't worth much to you\u201d, then advance", "Tell her Zillow is usually wrong", "Give her a low number so she isn't disappointed later"], 1, true,
+     "Never a figure, a range, or a comp. The seller anchors on whatever you say and Juan looks dishonest when he prices the real house."],
+    ["When does the recording disclosure happen?",
+     ["Only if the caller asks", "After you take their address", "In the opening, before you collect anything", "At the end of the call"], 2, true,
+     "California requires everyone on the call to know. It goes in the open, before any seller information."],
+    ["A caller says your letter quoted a different amount than expected.",
+     ["Explain how the estimate was calculated", "Apologise and offer a new number", "Stop, take their number, route it, say the right person will call", "Ask them to send you the letter"], 2, true,
+     "Hard stop, every time. Do not engage the difference, do not explain, do not speculate."],
+    ["A seller asks whether there are any fees.",
+     ["\u201cZero fees, the offer is the number on your check\u201d", "\u201cNo commission and we cover standard closing costs, but anything owed on the property still comes out of the sale\u201d", "\u201cAbout 1 or 2 percent\u201d", "\u201cJuan will explain it, I'm not sure\u201d"], 1, true,
+     "The first answer is untrue for anyone with a loan or a lien, and it is exactly the sort of claim that comes back at us."],
+    ["A caller asks where you are located.",
+     ["Say you're in the Philippines", "Say you're in California", "\u201cOur office is in San Carlos \u2014 170 Glenn Way. I'm on Juan's team.\u201d", "Change the subject"], 2, true,
+     "True, specific, about the company. Never state or imply your own location either way."],
+    ["A seller mentions her mother died in the house last month.",
+     ["\u201cI'm sorry. Take your time.\u201d then wait", "\u201cI'm sorry \u2014 that's exactly why we make this easy\u201d", "Move straight to the condition question", "Ask whether probate has started"], 0, true,
+     "Acknowledge and stop. Never use a death as a bridge into the pitch."],
+    ["Which question must be asked on every single call?",
+     ["\u201cWhat's your asking price?\u201d", "\u201cHow did you come across us?\u201d", "\u201cAre you the only owner?\u201d", "\u201cWhen can Juan come by?\u201d"], 1, false,
+     "It is how we tell our advertising provider which channel earned the call. Type their exact words."],
+    ["A caller insists on speaking to Juan and will not discuss the house.",
+     ["Refuse until they answer questions", "Take the best number, route to Cherry with a warm intro", "Tell them Juan takes every call personally", "Promise Juan calls back in 15 minutes"], 1, false,
+     "Do not hold him hostage behind qualification, and do not make promises about his time you cannot keep."],
+    ["All four gate items are confirmed and Cherry is on shift. What happens?",
+     ["Take a message", "Book a callback for tomorrow", "Transfer live to Cherry", "Send it to Juan"], 2, false,
+     "Qualified plus a closer on shift means a live handoff, not a message."],
+    ["No closer is on shift and the seller is qualified.",
+     ["Say someone will contact them", "Offer two specific times and log it", "Keep them talking until a closer is free", "Tell them to call back"], 1, false,
+     "Two named times, logged. A promised time is a promise."],
+    ["A caller says the house needs a new roof and the foundation looks cracked.",
+     ["Estimate the repair cost", "Say it's probably not worth much", "Ask what they're dealing with and let them describe it", "Tell them we only buy renovated homes"], 2, false,
+     "Gather, never diagnose construction over the phone."],
+    ["A seller wants a million and Zillow says 1.2.",
+     ["Explain Zillow is wrong most of the time", "\u201cOkay. How did you arrive at that number?\u201d", "Tell them the market has softened", "Mention a nearby sale"], 1, false,
+     "Never react, never counter, never cite a nearby sale. Question the source and listen."],
+    ["You missed three calls overnight. What do you do?",
+     ["Nothing, there's no contact information", "Log each one as a missed call", "Wait to see if they call back", "Tell the next shift verbally"], 1, false,
+     "An unlogged missed call is the most expensive call of the day, because we learn nothing from it."],
+    ["A seller says he is not selling and would like you to stop.",
+     ["Try one more time to book", "Explain the market may change", "Thank him and end the call politely", "Ask why not"], 2, false,
+     "Nobody is kept on the line. Every call ends with something they agreed to, including goodbye."],
+    ["A caller asks how you calculate offers.",
+     ["Describe a formula", "Say it's a percentage of market value", "Explain that Juan looks at the property and the work it needs, and will walk them through it", "Say you're not allowed to say"], 2, false,
+     "Honest about process, never invent a formula or a percentage."]
+  ];
+
+  var state = { progress: {}, drills: [], exams: [] };
+  var current = "m1", drawn = null, examChecked = false;
+
+  function $(id) { return document.getElementById(id); }
+  function all(s) { return Array.prototype.slice.call(document.querySelectorAll(s)); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+  function toast(m) {
+    var t = $("toast"); t.textContent = m; t.classList.add("on");
+    setTimeout(function () { t.classList.remove("on"); }, 2100);
+  }
+  function who() { return $("who").value; }
+
+  function save() {
+    if (!window.storage) return Promise.resolve();
+    return window.storage.set(KEY, JSON.stringify(state), SHARED).catch(function () {
+      toast("Save failed \u2014 session only");
+    });
+  }
+  function load() {
+    if (!window.storage) return Promise.resolve(null);
+    return window.storage.get(KEY, SHARED).then(function (r) {
+      if (!r || !r.value) return null;
+      try { return JSON.parse(r.value); } catch (e) { return null; }
+    }).catch(function () { return null; });
+  }
+
+  function myProgress() {
+    if (!state.progress[who()]) state.progress[who()] = {};
+    return state.progress[who()];
+  }
+
+  /* ---------- nav ---------- */
+  function buildNav() {
+    var host = $("nav"), lastGroup = null;
+    host.innerHTML = "";
+    NAV.forEach(function (n) {
+      if (n.group !== lastGroup) {
+        lastGroup = n.group;
+        if (n.group !== "Learn") {
+          var g = document.createElement("div");
+          g.className = "group"; g.textContent = n.group;
+          host.appendChild(g);
+        }
+      }
+      var b = document.createElement("button");
+      b.dataset.m = n.m;
+      b.innerHTML = "<span class='tick' data-tick='" + n.m + "'></span><span class='nn'>" + esc(n.label) + "</span>";
+      b.addEventListener("click", function () { go(n.m); });
+      host.appendChild(b);
+    });
+  }
+
+  function go(m) {
+    current = m;
+    all("#ta nav button").forEach(function (b) { b.classList.toggle("on", b.dataset.m === m); });
+    all("#ta .mod").forEach(function (v) { v.classList.toggle("on", v.dataset.m === m); });
+    $("mTitle").textContent = TITLES[m] || "";
+    var i = MODULES.indexOf(m);
+    $("kick").textContent = i >= 0 ? "Module " + (i + 1) + " of " + MODULES.length
+      : (m === "drill" ? "Practice" : m === "exam" ? "Certification" : "Tracking");
+    $("bDone").style.display = i >= 0 ? "inline-block" : "none";
+    refreshDoneBtn();
+    if (m === "prog") renderProgress();
+    if (window.scrollTo) window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function refreshDoneBtn() {
+    var done = !!myProgress()[current];
+    var b = $("bDone");
+    b.textContent = done ? "Completed" : "Mark complete";
+    b.className = "btn s " + (done ? "done" : "g");
+  }
+
+  function paintTicks() {
+    var p = myProgress();
+    all("#ta [data-tick]").forEach(function (t) {
+      t.textContent = p[t.dataset.tick] ? "\u2713" : "";
+    });
+  }
+
+  /* ---------- content render ---------- */
+  function renderContent() {
+    $("modelsWrap").innerHTML = MODELS.map(function (m, i) {
+      return "<div class='card'><h3>" + (i + 1) + ". " + esc(m[0]) + "</h3>" +
+        "<div class='say'>" + esc(m[1]) + "</div><p class='why'>" + esc(m[2]) + "</p></div>";
+    }).join("");
+
+    $("situWrap").innerHTML = SITUATIONS.map(function (s) {
+      return "<div class='card'><h3>" + esc(s[0]) + "</h3><div class='say'>" + esc(s[1]) +
+        "</div><p class='why stop'>" + esc(s[2]) + "</p></div>";
+    }).join("");
+
+    $("dqWrap").innerHTML = DQ.map(function (q) {
+      return "<label class='chk'><input type='checkbox' class='dq' checked><span>" + esc(q) + "</span></label>";
+    }).join("");
+    $("dhWrap").innerHTML = DH.map(function (q) {
+      return "<label class='chk'><input type='checkbox' class='dh'><span>" + esc(q) + "</span></label>";
+    }).join("");
+    all("#ta .dq, #ta .dh").forEach(function (c) { c.addEventListener("change", gradeDrill); });
+
+    $("examWrap").innerHTML = EXAM.map(function (q, i) {
+      return "<div class='q' data-q='" + i + "'><div class='qt'>" + (i + 1) + ". " + esc(q[0]) +
+        (q[3] ? "<span class='crit'>critical</span>" : "") + "</div>" +
+        q[1].map(function (o, j) {
+          return "<label class='opt'><input type='radio' name='q" + i + "' value='" + j + "'><span>" + esc(o) + "</span></label>";
+        }).join("") +
+        "<div class='fb'>" + esc(q[4]) + "</div></div>";
+    }).join("");
+  }
+
+  /* ---------- drills ---------- */
+  function draw(n) {
+    var picks = [];
+    while (picks.length < n) {
+      var s = SELLERS[Math.floor(Math.random() * SELLERS.length)];
+      if (picks.indexOf(s) === -1) picks.push(s);
+    }
+    drawn = picks[picks.length - 1];
+    $("dKind").textContent = n === 1 ? "Seller drawn \u2014 answer out loud" : "Three in a row \u2014 grade the last one";
+    $("dLine").innerHTML = picks.map(function (p, i) {
+      return (n > 1 ? (i + 1) + ". " : "") + esc(p[1]);
+    }).join("<br>");
+    $("dWatch").textContent = "Watch for: " + drawn[2];
+    resetGrade();
+  }
+
+  function gradeDrill() {
+    var got = all("#ta .dq").filter(function (c) { return c.checked; }).length;
+    var hard = all("#ta .dh").some(function (c) { return c.checked; });
+    var el = $("dScore");
+    el.textContent = hard ? "FAIL" : got;
+    el.className = "n " + (hard || got < 8 ? "fail" : "pass");
+    $("dVerdict").textContent = hard
+      ? "Hard fail. This is the kind that ends up on a recording \u2014 run it again today."
+      : got >= 8 ? "Pass." : "Below 8 of 10. Run it again before it counts.";
+    return { got: got, hard: hard, pass: !hard && got >= 8 };
+  }
+
+  function resetGrade() {
+    all("#ta .dq").forEach(function (c) { c.checked = true; });
+    all("#ta .dh").forEach(function (c) { c.checked = false; });
+    gradeDrill();
+  }
+
+  function logDrill() {
+    if (!drawn) { toast("Draw a seller first"); return; }
+    var r = gradeDrill();
+    state.drills.push({ at: Date.now(), who: who(), type: drawn[0], got: r.got, hard: r.hard, pass: r.pass });
+    save(); renderProgress();
+    toast(r.pass ? "Pass logged for " + who() : "Logged as a fail \u2014 coach it");
+  }
+
+  /* ---------- exam ---------- */
+  function submitExam() {
+    var right = 0, criticalMiss = 0, unanswered = 0;
+    EXAM.forEach(function (q, i) {
+      var box = document.querySelector("#ta .q[data-q='" + i + "']");
+      var sel = document.querySelector("input[name='q" + i + "']:checked");
+      if (!sel) { unanswered++; box.className = "q"; return; }
+      var ok = +sel.value === q[2];
+      box.className = "q " + (ok ? "right" : "wrong");
+      if (ok) right++;
+      else if (q[3]) criticalMiss++;
+    });
+    if (unanswered) { toast(unanswered + " question" + (unanswered > 1 ? "s" : "") + " unanswered"); return; }
+    examChecked = true;
+    var pass = right >= 12 && criticalMiss === 0;
+    $("eScore").textContent = right + "/15";
+    $("eScore").className = "n " + (pass ? "pass" : "fail");
+    $("eVerdict").textContent = criticalMiss
+      ? "Failed on " + criticalMiss + " critical question" + (criticalMiss > 1 ? "s" : "") + ". Reread Never say this and retake."
+      : pass ? "Passed. Cherry signs off before live calls." : "Below 12. Review the modules you missed and retake.";
+    state.exams.push({ at: Date.now(), who: who(), right: right, criticalMiss: criticalMiss, pass: pass });
+    save(); renderProgress();
+    toast(pass ? "Exam passed" : "Exam not passed");
+  }
+
+  function retake() {
+    all("#ta .q").forEach(function (b) { b.className = "q"; });
+    all("#ta .q input[type=radio]").forEach(function (r) { r.checked = false; });
+    $("eScore").textContent = "\u2014"; $("eScore").className = "n";
+    $("eVerdict").textContent = "Answer every question, then submit.";
+    examChecked = false;
+  }
+
+  /* ---------- progress ---------- */
+  function renderProgress() {
+    $("progWrap").innerHTML = PEOPLE.map(function (nm) {
+      var p = state.progress[nm] || {};
+      var mods = MODULES.filter(function (m) { return p[m]; }).length;
+      var mine = state.drills.filter(function (d) { return d.who === nm && d.pass; });
+      var types = {};
+      mine.forEach(function (d) { types[d.type] = 1; });
+      var nt = Object.keys(types).length;
+      var ex = state.exams.filter(function (e) { return e.who === nm && e.pass; }).length;
+      var ready = mods === MODULES.length && mine.length >= 12 && nt >= 6 && ex > 0;
+      var pctModules = Math.round(mods / MODULES.length * 100);
+      return "<div class='prog'><div style='display:flex; justify-content:space-between; align-items:center; gap:12px'>" +
+        "<span class='nm'>" + esc(nm) + "</span>" +
+        "<span class='" + (ready ? "ready" : "notready") + "'>" + (ready ? "ready to certify" : "in training") + "</span></div>" +
+        "<div class='bar'><i class='" + (pctModules === 100 ? "full" : "") + "' style='width:" + pctModules + "%'></i></div>" +
+        "<div class='prow'><span>Modules read</span><b>" + mods + " of " + MODULES.length + "</b></div>" +
+        "<div class='prow'><span>Drills passed</span><b>" + mine.length + " of 12</b></div>" +
+        "<div class='prow'><span>Different seller types</span><b>" + nt + " of 6</b></div>" +
+        "<div class='prow'><span>Exam</span><b>" + (ex ? "passed" : "not passed") + "</b></div></div>";
+    }).join("");
+
+    var recent = state.drills.slice(-30).reverse();
+    $("runEmpty").style.display = recent.length ? "none" : "block";
+    $("runLog").innerHTML = recent.map(function (d) {
+      return "<tr><td>" + new Date(d.at).toLocaleDateString([], { month: "short", day: "numeric" }) +
+        "</td><td>" + esc(d.who) + "</td><td>" + esc(d.type) + "</td><td>" +
+        (d.hard ? "<b style='color:var(--stop)'>hard fail</b>"
+                : d.pass ? "<b style='color:var(--go)'>pass " + d.got + "</b>" : d.got + "/10") + "</td></tr>";
+    }).join("");
+  }
+
+  /* ---------- wiring ---------- */
+  PEOPLE.forEach(function (n) {
+    var o = document.createElement("option"); o.textContent = n; $("who").appendChild(o);
+  });
+  $("who").addEventListener("change", function () { paintTicks(); refreshDoneBtn(); renderProgress(); });
+  $("bDone").addEventListener("click", function () {
+    var p = myProgress();
+    if (p[current]) delete p[current]; else p[current] = Date.now();
+    save(); paintTicks(); refreshDoneBtn(); renderProgress();
+    toast(p[current] ? "Marked complete" : "Marked not complete");
+  });
+  $("bPrint").addEventListener("click", function () {
+    if (current !== "card") go("card");
+    setTimeout(function () { window.print(); }, 120);
+  });
+  $("bDraw").addEventListener("click", function () { draw(1); });
+  $("bDraw3").addEventListener("click", function () { draw(3); });
+  $("bSaveDrill").addEventListener("click", logDrill);
+  $("bResetDrill").addEventListener("click", resetGrade);
+  $("bSubmit").addEventListener("click", submitExam);
+  $("bRetake").addEventListener("click", retake);
+  $("bWipe").addEventListener("click", function () {
+    state = { progress: {}, drills: [], exams: [] };
+    save(); paintTicks(); refreshDoneBtn(); renderProgress(); toast("Training data reset");
+  });
+
+  buildNav();
+  renderContent();
+  go("m1");
+  renderProgress();
+
+  load().then(function (s) {
+    if (s) {
+      state.progress = s.progress || {};
+      state.drills = Array.isArray(s.drills) ? s.drills : [];
+      state.exams = Array.isArray(s.exams) ? s.exams : [];
+    }
+    paintTicks(); refreshDoneBtn(); renderProgress();
+  });
+})();
+</script>
+</body>
+</html>
