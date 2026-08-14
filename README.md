@@ -12,7 +12,10 @@ certification test, plus a sales practice mode and the courseware:
    situations, empathy personas, endings). Drills are auto-graded the
    moment they end — hard fails always fail. Quiz + drill unlock the next
    module; finishing all 8 unlocks the certification test. Admin can
-   bypass the gate per trainee (`skip_modules`) for dry runs.
+   bypass the gate per trainee (`skip_modules`) for dry runs — either via
+   the checkbox on the trainee's admin page, or by typing the
+   `ADMIN_UNLOCK_CODE` (env var) under "Admin" at the bottom of the
+   trainee's learning-path sidebar.
 
 2. **🎧 Versant certification test** — a four-part spoken test administered
    and graded by AI, modeled on the Versant format but scored on THB call

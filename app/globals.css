@@ -279,3 +279,11 @@ a.learn-navitem:hover { background: var(--brand-soft); }
   .learn-progressbar { background: #232d33; }
   .learn-navnum { background: #232d33; }
 }
+
+/* ---------- Admin unlock (learning-path sidebar) ---------- */
+.learn-admin { padding: 10px 14px 18px; }
+.learn-admin summary { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); cursor: pointer; opacity: 0.7; }
+.learn-adminform { display: flex; gap: 6px; margin-top: 8px; }
+.learn-adminform .input { font-size: 13px; padding: 7px 9px; }
+.learn-adminform .btn { padding: 7px 10px; font-size: 12px; white-space: nowrap; }
+.learn-adminnote { font-size: 11.5px; color: var(--amber); padding: 10px 14px 18px; margin: 0; }

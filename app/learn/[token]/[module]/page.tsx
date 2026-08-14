@@ -6,6 +6,7 @@ import { DRILLS } from "@/lib/drills";
 import { quizForClient } from "@/lib/quizzes";
 import { pathState } from "@/lib/progress";
 import Quiz from "./quiz";
+import AdminUnlock from "./admin-unlock";
 
 export default async function ModulePage({
   params,
@@ -92,6 +93,7 @@ export default async function ModulePage({
             )}
           </div>
         </nav>
+        <AdminUnlock token={token} unlocked={!!trainee.skip_modules} />
       </aside>
 
       <main className="learn-main fade-in">
