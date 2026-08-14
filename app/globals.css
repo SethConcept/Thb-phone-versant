@@ -418,3 +418,13 @@ a.learn-navitem:hover { background: var(--brand-soft); }
 .gv2-end:active { transform: rotate(135deg) scale(0.94); }
 .gv2-timer { font-size: 26px; font-variant-numeric: tabular-nums; color: var(--g-muted); margin: 16px 0 0; font-weight: 300; }
 .gv2-livehint { font-size: 12.5px; color: var(--g-muted); margin-top: 14px; }
+
+/* gv2 polish: stacked rows, no horizontal overflow, icon alignment */
+.gv2-list { overflow-x: hidden; }
+.gv2-rowmain { display: flex; flex-direction: column; gap: 1px; }
+.gv2-rowname, .gv2-rowsub { display: block; }
+.gv2-rowcall { display: inline-flex; align-items: center; justify-content: center; }
+.gv2-railbtn { display: inline-flex; align-items: center; justify-content: center; }
+.gv2-dialgo { display: inline-flex; align-items: center; justify-content: center; }
+.gv2-search svg { flex-shrink: 0; color: var(--g-muted); }
+.gv2-logo .glyph { display: inline-flex; align-items: center; }

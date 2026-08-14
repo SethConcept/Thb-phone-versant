@@ -66,6 +66,38 @@ function Shell({ step, children }: { step: number; children: React.ReactNode }) 
 
 const initialOf = (label: string) => (label.trim()[0] || "?").toUpperCase();
 const firstNameOf = (label: string) => label.split(" — ")[0];
+const capFirst = (x: string) => (x ? x.charAt(0).toUpperCase() + x.slice(1) : x);
+
+// Material-style icons (fill: currentColor) — emoji phones render as red
+// handsets on Windows and break the Google Voice look.
+function PhoneIcon({ size = 18, style }: { size?: number; style?: React.CSSProperties }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" style={style} aria-hidden>
+      <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+    </svg>
+  );
+}
+function SearchIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+    </svg>
+  );
+}
+function ChatIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
+    </svg>
+  );
+}
+function VoicemailIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M18.5 6C15.46 6 13 8.46 13 11.5c0 1.33.47 2.55 1.26 3.5H9.74c.79-.95 1.26-2.17 1.26-3.5C11 8.46 8.54 6 5.5 6S0 8.46 0 11.5 2.46 17 5.5 17h13c3.04 0 5.5-2.46 5.5-5.5S21.54 6 18.5 6zm-13 9C3.57 15 2 13.43 2 11.5S3.57 8 5.5 8 9 9.57 9 11.5 7.43 15 5.5 15zm13 0c-1.93 0-3.5-1.57-3.5-3.5S16.57 8 18.5 8s3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
+    </svg>
+  );
+}
 const situationOf = (label: string) => label.split(" — ")[1] ?? "";
 // Google contact-avatar palette, deterministic per roster position
 const AVA_COLORS = ["#7b1fa2", "#c2185b", "#00796b", "#f57c00", "#455a64", "#5c6bc0", "#0288d1", "#689f38", "#e64a19", "#616161"];
@@ -599,9 +631,9 @@ export default function InterviewClient({
       <div className="gv2">
         <div className="gv2-top">
           <button className="gv2-burger" aria-hidden>≡</button>
-          <div className="gv2-logo"><span className="glyph">☎</span> Voice</div>
+          <div className="gv2-logo"><span className="glyph"><PhoneIcon size={22} /></span> Voice</div>
           <div className="gv2-search">
-            <span>🔍</span>
+            <SearchIcon size={17} />
             <input
               placeholder="Search sellers"
               value={search}
@@ -616,9 +648,9 @@ export default function InterviewClient({
 
         <div className="gv2-body">
           <aside className="gv2-rail">
-            <button className="gv2-railbtn on" title="Calls">📞<span className="gv2-railbadge">{sellers.length}</span></button>
-            <button className="gv2-railbtn" title="Messages">💬</button>
-            <button className="gv2-railbtn" title="Voicemail">▣</button>
+            <button className="gv2-railbtn on" title="Calls"><PhoneIcon size={19} /><span className="gv2-railbadge">{sellers.length}</span></button>
+            <button className="gv2-railbtn" title="Messages"><ChatIcon size={18} /></button>
+            <button className="gv2-railbtn" title="Voicemail"><VoicemailIcon size={20} /></button>
           </aside>
 
           <div className="gv2-list">
@@ -633,7 +665,7 @@ export default function InterviewClient({
                   className="gv2-rowcall"
                   onClick={(e) => { e.stopPropagation(); incomingCall(x); }}
                 >
-                  📞
+                  <PhoneIcon size={17} />
                 </button>
               </div>
             ))}
@@ -644,7 +676,7 @@ export default function InterviewClient({
 
           <div className="gv2-center">
             <div className="gv2-hero">
-              <h2>Hi {firstNameOf(candidateName)}!</h2>
+              <h2>Hi {capFirst(firstNameOf(candidateName))}!</h2>
               <p>Your line is open. Take the next call to work toward certification — 12 passed calls across 6 different sellers.</p>
               <p style={{ marginTop: 8 }}>Calling a seller from the list is practice: graded, but it doesn&apos;t count.</p>
             </div>
@@ -661,13 +693,13 @@ export default function InterviewClient({
                 onChange={(e) => { setDial(e.target.value); setDialError(""); }}
                 onKeyDown={(e) => e.key === "Enter" && dialSeller()}
               />
-              <button className="gv2-dialgo" onClick={dialSeller} disabled={!dial.trim()} title="Call">📞</button>
+              <button className="gv2-dialgo" onClick={dialSeller} disabled={!dial.trim()} title="Call"><PhoneIcon size={17} /></button>
             </div>
             {dialError && <p className="gv2-note" style={{ color: "var(--g-red)", marginTop: 2 }}>{dialError}</p>}
 
             <div className="gv2-suglabel">SUGGESTIONS</div>
             <button className="gv2-sug" onClick={() => incomingCall(null)}>
-              <span className="gv2-ava">📞</span>
+              <span className="gv2-ava"><PhoneIcon size={17} /></span>
               <span>
                 <span className="gv2-sugname" style={{ display: "block" }}>Take the next call</span>
                 <span className="gv2-sugsub">Random seller · counts toward certification</span>
@@ -704,8 +736,12 @@ export default function InterviewClient({
               <h2>{pickedSeller ? firstNameOf(pickedSeller.label) : "Unknown caller"}</h2>
               <p className="sub">{pickedSeller ? pickedSeller.number : "No caller ID"} · Incoming call…</p>
               <div className="gv2-actions">
-                <button className="gv2-round gv2-decline" onClick={declineCall} title="Decline">✖</button>
-                <button className="gv2-round gv2-answer" onClick={answerCall} title="Answer">📞</button>
+                <button className="gv2-round gv2-decline" onClick={declineCall} title="Decline">
+                  <PhoneIcon size={22} style={{ transform: "rotate(135deg)" }} />
+                </button>
+                <button className="gv2-round gv2-answer" onClick={answerCall} title="Answer">
+                  <PhoneIcon size={22} />
+                </button>
               </div>
             </div>
           </div>
@@ -730,7 +766,7 @@ export default function InterviewClient({
     return (
       <div className="gv2">
         <div className="gv2-top">
-          <div className="gv2-logo"><span className="glyph">☎</span> Voice</div>
+          <div className="gv2-logo"><span className="glyph"><PhoneIcon size={22} /></span> Voice</div>
           <div className="gv2-topright">
             <span className="gv2-me">{initialOf(candidateName)}</span>
           </div>
@@ -751,7 +787,7 @@ export default function InterviewClient({
                   endSession(false);
               }}
             >
-              📞
+              <PhoneIcon size={22} />
             </button>
             <p className="gv2-livehint">Hang up when the call is over — grading is automatic.</p>
           </div>
