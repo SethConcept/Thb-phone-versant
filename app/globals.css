@@ -288,50 +288,133 @@ a.learn-navitem:hover { background: var(--brand-soft); }
 .learn-adminform .btn { padding: 7px 10px; font-size: 12px; white-space: nowrap; }
 .learn-adminnote { font-size: 11.5px; color: var(--amber); padding: 10px 14px 18px; margin: 0; }
 
-/* ---------- Phone desk (Google Voice-style certification room) ---------- */
-.gv-shell { max-width: 980px; width: 100%; padding: 0; overflow: hidden; position: relative; align-self: center; }
-.gv-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
-.gv-brand { font-weight: 700; font-size: 16px; }
-.gv-body { display: grid; grid-template-columns: 1fr; min-height: 480px; }
-@media (min-width: 860px) { .gv-body { grid-template-columns: 320px 1fr; } }
-.gv-side { border-bottom: 1px solid var(--line); max-height: 300px; overflow-y: auto; }
-@media (min-width: 860px) { .gv-side { border-bottom: none; border-right: 1px solid var(--line); max-height: 560px; } }
-.gv-side-head { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 700; padding: 12px 12px 6px; }
-.gv-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid var(--line); }
-.gv-row:hover { background: var(--brand-soft); }
-.gv-avatar {
-  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
-  background: var(--brand); color: #fff; font-weight: 700; font-size: 16px;
+
+/* ---------- Phone desk — Google Voice look (fixed light palette) ---------- */
+.gv2 {
+  --g-bg: #ffffff; --g-panel: #f8f9fa; --g-hover: #f1f3f4; --g-line: #dadce0;
+  --g-ink: #202124; --g-muted: #5f6368; --g-green: #188038; --g-call: #34a853;
+  --g-red: #ea4335; --g-blue: #1a73e8;
+  position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column;
+  background: var(--g-bg); color: var(--g-ink);
+  font-family: "Google Sans", Roboto, "Segoe UI", Arial, sans-serif;
+}
+.gv2 * { box-sizing: border-box; }
+
+/* top bar */
+.gv2-top {
+  display: flex; align-items: center; gap: 14px; padding: 8px 16px;
+  border-bottom: 1px solid var(--g-line); background: var(--g-bg); flex-shrink: 0;
+}
+.gv2-burger { font-size: 18px; color: var(--g-muted); background: none; border: none; padding: 8px; border-radius: 50%; cursor: default; }
+.gv2-logo { display: flex; align-items: center; gap: 8px; font-size: 20px; color: var(--g-muted); }
+.gv2-logo .glyph { color: var(--g-green); font-size: 22px; }
+.gv2-search {
+  flex: 1; max-width: 620px; display: flex; align-items: center; gap: 10px;
+  background: var(--g-hover); border-radius: 8px; padding: 9px 14px; color: var(--g-muted);
+}
+.gv2-search input { border: none; background: none; outline: none; font-size: 15px; width: 100%; color: var(--g-ink); }
+.gv2-topright { margin-left: auto; display: flex; align-items: center; gap: 12px; color: var(--g-muted); }
+.gv2-me {
+  width: 32px; height: 32px; border-radius: 50%; background: #7b1fa2; color: #fff;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 500;
+}
+
+/* body: icon rail | call list | center | right dial panel */
+.gv2-body { flex: 1; display: flex; min-height: 0; }
+.gv2-rail { width: 64px; border-right: 1px solid var(--g-line); padding-top: 10px; display: none; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; }
+@media (min-width: 760px) { .gv2-rail { display: flex; } }
+.gv2-railbtn { position: relative; width: 48px; height: 48px; border-radius: 50%; border: none; background: none; font-size: 19px; color: var(--g-muted); cursor: default; }
+.gv2-railbtn.on { background: #e6f4ea; color: var(--g-green); }
+.gv2-railbadge {
+  position: absolute; top: 4px; right: 4px; background: var(--g-green); color: #fff;
+  font-size: 10px; min-width: 16px; height: 16px; border-radius: 8px; padding: 0 4px;
   display: inline-flex; align-items: center; justify-content: center;
 }
-.gv-row-main { display: flex; flex-direction: column; min-width: 0; flex: 1; text-align: left; }
-.gv-row-name { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gv-row-num { font-size: 12px; color: var(--muted); }
-.gv-callbtn { background: none; border: 1px solid var(--line); border-radius: 50%; width: 34px; height: 34px; cursor: pointer; font-size: 14px; flex-shrink: 0; }
-.gv-callbtn:hover { background: var(--green-bg); border-color: var(--green); }
-.gv-main { padding: 26px 24px; display: flex; flex-direction: column; gap: 26px; justify-content: center; text-align: center; }
-.gv-next { border: 1px solid var(--line); border-radius: var(--radius); padding: 26px 20px; background: var(--brand-soft); }
-.gv-dial { text-align: left; max-width: 420px; margin: 0 auto; width: 100%; }
+.gv2-list { width: 340px; border-right: 1px solid var(--g-line); overflow-y: auto; flex-shrink: 0; }
+@media (max-width: 980px) { .gv2-list { width: 280px; } }
+.gv2-row { display: flex; align-items: center; gap: 14px; padding: 10px 16px; cursor: pointer; }
+.gv2-row:hover { background: var(--g-hover); }
+.gv2-ava {
+  width: 40px; height: 40px; border-radius: 50%; color: #fff; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 500;
+}
+.gv2-rowmain { min-width: 0; flex: 1; }
+.gv2-rowname { font-size: 14px; color: var(--g-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gv2-rowsub { font-size: 12.5px; color: var(--g-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gv2-rowsub .dir { color: var(--g-green); }
+.gv2-rowcall { border: none; background: none; font-size: 17px; color: var(--g-green); border-radius: 50%; width: 38px; height: 38px; cursor: pointer; flex-shrink: 0; }
+.gv2-rowcall:hover { background: #e6f4ea; }
 
-.call-overlay {
-  position: absolute; inset: 0; z-index: 20;
-  background: rgba(10, 18, 20, 0.72); backdrop-filter: blur(3px);
+.gv2-center { flex: 1; padding: 14px; min-width: 0; display: none; }
+@media (min-width: 900px) { .gv2-center { display: block; } }
+.gv2-hero {
+  background: var(--g-panel); border-radius: 16px; height: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; text-align: center; padding: 24px; color: var(--g-ink);
+}
+.gv2-hero h2 { font-weight: 400; font-size: 22px; margin: 0; }
+.gv2-hero p { color: var(--g-muted); font-size: 14px; margin: 0; max-width: 40ch; }
+
+.gv2-dialpanel { width: 320px; border-left: 1px solid var(--g-line); padding: 16px; overflow-y: auto; flex-shrink: 0; margin-left: auto; }
+@media (max-width: 760px) { .gv2-dialpanel { width: 100%; border-left: none; } }
+.gv2-callas { font-size: 13px; color: var(--g-muted); margin-bottom: 2px; }
+.gv2-callasnum { font-size: 15px; color: var(--g-ink); margin-bottom: 14px; }
+.gv2-dialrow { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.gv2-dialrow input {
+  flex: 1; border: none; border-bottom: 1px solid var(--g-line); background: none;
+  outline: none; font-size: 15px; padding: 8px 2px; color: var(--g-ink);
+}
+.gv2-dialrow input:focus { border-bottom-color: var(--g-blue); }
+.gv2-dialgo {
+  width: 42px; height: 42px; border-radius: 50%; border: none; background: var(--g-call);
+  color: #fff; font-size: 16px; cursor: pointer; flex-shrink: 0;
+}
+.gv2-dialgo:disabled { background: var(--g-hover); color: var(--g-muted); cursor: not-allowed; }
+.gv2-suglabel { font-size: 11px; letter-spacing: 0.08em; color: var(--g-muted); margin: 14px 0 6px; }
+.gv2-sug {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  padding: 10px; border: none; background: none; border-radius: 10px; cursor: pointer;
+}
+.gv2-sug:hover { background: var(--g-hover); }
+.gv2-sug .gv2-ava { background: var(--g-green); }
+.gv2-sugname { font-size: 14px; color: var(--g-ink); }
+.gv2-sugsub { font-size: 12px; color: var(--g-muted); }
+.gv2-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 14px; }
+.gv2-key { border: none; background: none; border-radius: 10px; padding: 10px 0 6px; cursor: pointer; }
+.gv2-key:hover { background: var(--g-hover); }
+.gv2-keynum { font-size: 20px; color: var(--g-ink); line-height: 1.1; }
+.gv2-keysub { font-size: 9px; letter-spacing: 0.14em; color: var(--g-muted); min-height: 11px; }
+.gv2-padtoggle { display: block; margin: 10px auto 0; border: none; background: none; color: var(--g-muted); font-size: 12.5px; cursor: pointer; }
+.gv2-note { font-size: 11.5px; color: var(--g-muted); margin-top: 12px; line-height: 1.5; }
+.gv2-backlink { font-size: 12.5px; color: var(--g-blue); text-decoration: none; }
+
+/* incoming call + live call (GV light) */
+.gv2-overlay {
+  position: absolute; inset: 0; z-index: 40;
+  background: rgba(32, 33, 36, 0.55);
   display: flex; align-items: center; justify-content: center;
 }
-.call-card { background: var(--card); border-radius: var(--radius); padding: 34px 44px; text-align: center; box-shadow: var(--shadow); }
-.call-avatar { width: 72px; height: 72px; font-size: 28px; margin: 0 auto; }
-.ringing-pulse { animation: ring-pulse 1.2s ease-out infinite; }
-@keyframes ring-pulse { 0% { box-shadow: 0 0 0 0 rgba(18, 133, 95, 0.5); } 100% { box-shadow: 0 0 0 22px rgba(18, 133, 95, 0); } }
-.speaking-pulse { animation: ring-pulse 1.6s ease-out infinite; }
-.call-round {
+.gv2-callcard {
+  background: #fff; border-radius: 20px; padding: 34px 46px; text-align: center;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.28); color: var(--g-ink);
+}
+.gv2-callcard h2 { font-weight: 400; font-size: 22px; margin: 14px 0 2px; }
+.gv2-callcard .sub { color: var(--g-muted); font-size: 13.5px; margin: 0; }
+.gv2-bigava { width: 76px; height: 76px; font-size: 30px; margin: 0 auto; }
+.ringing-pulse { animation: gv2pulse 1.2s ease-out infinite; }
+.speaking-pulse { animation: gv2pulse 1.6s ease-out infinite; }
+@keyframes gv2pulse { 0% { box-shadow: 0 0 0 0 rgba(52, 168, 83, 0.45); } 100% { box-shadow: 0 0 0 22px rgba(52, 168, 83, 0); } }
+.gv2-actions { display: flex; justify-content: center; gap: 26px; margin-top: 24px; }
+.gv2-round {
   width: 60px; height: 60px; border-radius: 50%; border: none; cursor: pointer;
   font-size: 22px; color: #fff; display: inline-flex; align-items: center; justify-content: center;
   transition: transform 0.08s, filter 0.15s;
 }
-.call-round:hover { filter: brightness(1.1); }
-.call-round:active { transform: scale(0.94); }
-.call-answer { background: #12855f; animation: ring-pulse 1.2s ease-out infinite; }
-.call-decline { background: #d23b2e; }
-.call-end { margin-top: 16px; transform: rotate(135deg); }
-.call-end:active { transform: rotate(135deg) scale(0.94); }
-.call-live .call-timer { font-size: 26px; font-variant-numeric: tabular-nums; color: var(--muted); margin: 14px 0 4px; }
+.gv2-round:hover { filter: brightness(1.08); }
+.gv2-round:active { transform: scale(0.94); }
+.gv2-answer { background: var(--g-call); animation: gv2pulse 1.2s ease-out infinite; }
+.gv2-decline { background: var(--g-red); }
+.gv2-end { background: var(--g-red); transform: rotate(135deg); margin-top: 20px; }
+.gv2-end:active { transform: rotate(135deg) scale(0.94); }
+.gv2-timer { font-size: 26px; font-variant-numeric: tabular-nums; color: var(--g-muted); margin: 16px 0 0; font-weight: 300; }
+.gv2-livehint { font-size: 12.5px; color: var(--g-muted); margin-top: 14px; }

@@ -65,6 +65,15 @@ function Shell({ step, children }: { step: number; children: React.ReactNode }) 
 }
 
 const initialOf = (label: string) => (label.trim()[0] || "?").toUpperCase();
+const firstNameOf = (label: string) => label.split(" — ")[0];
+const situationOf = (label: string) => label.split(" — ")[1] ?? "";
+// Google contact-avatar palette, deterministic per roster position
+const AVA_COLORS = ["#7b1fa2", "#c2185b", "#00796b", "#f57c00", "#455a64", "#5c6bc0", "#0288d1", "#689f38", "#e64a19", "#616161"];
+
+const PAD_KEYS: [string, string][] = [
+  ["1", ""], ["2", "ABC"], ["3", "DEF"], ["4", "GHI"], ["5", "JKL"], ["6", "MNO"],
+  ["7", "PQRS"], ["8", "TUV"], ["9", "WXYZ"], ["*", ""], ["0", ""], ["#", ""],
+];
 
 export default function InterviewClient({
   token,
@@ -104,6 +113,8 @@ export default function InterviewClient({
   const [pickedSeller, setPickedSeller] = useState<DeskSeller | null>(null);
   const [dial, setDial] = useState("");
   const [dialError, setDialError] = useState("");
+  const [search, setSearch] = useState("");
+  const [showPad, setShowPad] = useState(true);
   const [callSec, setCallSec] = useState(0);
   const ringRef = useRef<{ ctx: AudioContext; timer: ReturnType<typeof setInterval> } | null>(null);
   const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -578,98 +589,130 @@ export default function InterviewClient({
       </Shell>
     );
 
-  if (stage === "desk" || stage === "ringing")
+  if (stage === "desk" || stage === "ringing") {
+    const q = search.trim().toLowerCase();
+    const visibleSellers = q
+      ? sellers.filter((x) => x.label.toLowerCase().includes(q) || x.number.includes(q))
+      : sellers;
+    const avaColor = (id: string) => AVA_COLORS[sellers.findIndex((x) => x.id === id) % AVA_COLORS.length];
     return (
-      <div className="candidate-bg" style={{ alignItems: "stretch" }}>
-        <main className="card gv-shell fade-in">
-          <div className="gv-top">
-            <div>
-              <div className="gv-brand">☎️ {SELLER_BRAND} — Phone Desk</div>
-              <div className="small muted">Answering as {candidateName} · line (510) 394-0100</div>
-            </div>
-            <a href={`/learn/${token}`} className="small">← My learning path</a>
+      <div className="gv2">
+        <div className="gv2-top">
+          <button className="gv2-burger" aria-hidden>≡</button>
+          <div className="gv2-logo"><span className="glyph">☎</span> Voice</div>
+          <div className="gv2-search">
+            <span>🔍</span>
+            <input
+              placeholder="Search sellers"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
+          <div className="gv2-topright">
+            <a href={`/learn/${token}`} className="gv2-backlink">My learning path</a>
+            <span className="gv2-me">{initialOf(candidateName)}</span>
+          </div>
+        </div>
 
-          <div className="gv-body">
-            <aside className="gv-side">
-              <div className="gv-side-head">Sellers</div>
-              {sellers.map((s) => (
-                <div key={s.id} className="gv-row">
-                  <span className="gv-avatar">{initialOf(s.label)}</span>
-                  <span className="gv-row-main">
-                    <span className="gv-row-name">{s.label}</span>
-                    <span className="gv-row-num">{s.number}</span>
-                  </span>
-                  <button
-                    className="gv-callbtn"
-                    title={`Practice call with ${s.label}`}
-                    onClick={() => incomingCall(s)}
-                  >
-                    📞
-                  </button>
-                </div>
-              ))}
-              <p className="small muted" style={{ padding: "10px 12px" }}>
-                Dialing a specific seller is <strong>practice</strong> — graded, but it doesn&apos;t count toward certification.
-              </p>
-            </aside>
+        <div className="gv2-body">
+          <aside className="gv2-rail">
+            <button className="gv2-railbtn on" title="Calls">📞<span className="gv2-railbadge">{sellers.length}</span></button>
+            <button className="gv2-railbtn" title="Messages">💬</button>
+            <button className="gv2-railbtn" title="Voicemail">▣</button>
+          </aside>
 
-            <section className="gv-main">
-              <div className="gv-next">
-                <h2 style={{ margin: "0 0 6px", fontSize: 20 }}>Ready for the next call?</h2>
-                <p className="small muted" style={{ margin: "0 0 14px" }}>
-                  A seller who saw the TV ad is on the line — you won&apos;t know who until you answer. Counts toward your certification: 12 passed calls, 6 different sellers.
-                </p>
-                <button className="btn btn-lg" onClick={() => incomingCall(null)}>
-                  📞 Take the next call
+          <div className="gv2-list">
+            {visibleSellers.map((x) => (
+              <div key={x.id} className="gv2-row" onClick={() => incomingCall(x)} title={`Practice call with ${firstNameOf(x.label)}`}>
+                <span className="gv2-ava" style={{ background: avaColor(x.id) }}>{initialOf(x.label)}</span>
+                <span className="gv2-rowmain">
+                  <span className="gv2-rowname">{firstNameOf(x.label)}</span>
+                  <span className="gv2-rowsub"><span className="dir">↙</span> {situationOf(x.label)} · {x.number}</span>
+                </span>
+                <button
+                  className="gv2-rowcall"
+                  onClick={(e) => { e.stopPropagation(); incomingCall(x); }}
+                >
+                  📞
                 </button>
               </div>
-
-              <div className="gv-dial">
-                <div className="gv-side-head" style={{ padding: 0, marginBottom: 8 }}>Or dial a seller (practice)</div>
-                <div className="row" style={{ flexWrap: "nowrap" }}>
-                  <input
-                    className="input"
-                    placeholder="Type a name or number…"
-                    value={dial}
-                    list="gv-sellers"
-                    onChange={(e) => { setDial(e.target.value); setDialError(""); }}
-                    onKeyDown={(e) => e.key === "Enter" && dialSeller()}
-                  />
-                  <button className="btn" onClick={dialSeller} disabled={!dial.trim()}>Call</button>
-                </div>
-                <datalist id="gv-sellers">
-                  {sellers.map((s) => (
-                    <option key={s.id} value={s.label.split(" — ")[0]}>{s.number}</option>
-                  ))}
-                </datalist>
-                {dialError && <p className="small" style={{ color: "var(--red)", margin: "6px 0 0" }}>{dialError}</p>}
-              </div>
-            </section>
+            ))}
+            {visibleSellers.length === 0 && (
+              <p className="gv2-note" style={{ padding: "14px 16px" }}>No sellers match &quot;{search}&quot;.</p>
+            )}
           </div>
 
-          {stage === "ringing" && (
-            <div className="call-overlay">
-              <div className="call-card fade-in">
-                <div className="gv-avatar call-avatar ringing-pulse">
-                  {pickedSeller ? initialOf(pickedSeller.label) : "?"}
-                </div>
-                <h2 style={{ margin: "12px 0 2px", fontSize: 20 }}>
-                  {pickedSeller ? pickedSeller.label.split(" — ")[0] : "Unknown caller"}
-                </h2>
-                <p className="small muted" style={{ margin: 0 }}>
-                  {pickedSeller ? pickedSeller.number : "No caller ID"} · incoming call…
-                </p>
-                <div className="row" style={{ justifyContent: "center", gap: 18, marginTop: 22 }}>
-                  <button className="call-round call-decline" onClick={declineCall} title="Decline">✖</button>
-                  <button className="call-round call-answer" onClick={answerCall} title="Answer">📞</button>
-                </div>
+          <div className="gv2-center">
+            <div className="gv2-hero">
+              <h2>Hi {firstNameOf(candidateName)}!</h2>
+              <p>Your line is open. Take the next call to work toward certification — 12 passed calls across 6 different sellers.</p>
+              <p style={{ marginTop: 8 }}>Calling a seller from the list is practice: graded, but it doesn&apos;t count.</p>
+            </div>
+          </div>
+
+          <div className="gv2-dialpanel">
+            <div className="gv2-callas">Call as</div>
+            <div className="gv2-callasnum">Twin Home Buyer · (510) 394-0100</div>
+
+            <div className="gv2-dialrow">
+              <input
+                placeholder="Enter a name or number"
+                value={dial}
+                onChange={(e) => { setDial(e.target.value); setDialError(""); }}
+                onKeyDown={(e) => e.key === "Enter" && dialSeller()}
+              />
+              <button className="gv2-dialgo" onClick={dialSeller} disabled={!dial.trim()} title="Call">📞</button>
+            </div>
+            {dialError && <p className="gv2-note" style={{ color: "var(--g-red)", marginTop: 2 }}>{dialError}</p>}
+
+            <div className="gv2-suglabel">SUGGESTIONS</div>
+            <button className="gv2-sug" onClick={() => incomingCall(null)}>
+              <span className="gv2-ava">📞</span>
+              <span>
+                <span className="gv2-sugname" style={{ display: "block" }}>Take the next call</span>
+                <span className="gv2-sugsub">Random seller · counts toward certification</span>
+              </span>
+            </button>
+
+            {showPad && (
+              <div className="gv2-pad">
+                {PAD_KEYS.map(([n, sub]) => (
+                  <button key={n} className="gv2-key" onClick={() => { setDial((d) => d + n); setDialError(""); }}>
+                    <div className="gv2-keynum">{n}</div>
+                    <div className="gv2-keysub">{sub}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+            <button className="gv2-padtoggle" onClick={() => setShowPad((v) => !v)}>
+              {showPad ? "⌄ Hide keypad" : "⌃ Show keypad"}
+            </button>
+
+            <p className="gv2-note">This session is recorded and graded automatically when the call ends.</p>
+          </div>
+        </div>
+
+        {stage === "ringing" && (
+          <div className="gv2-overlay">
+            <div className="gv2-callcard fade-in">
+              <div
+                className="gv2-ava gv2-bigava ringing-pulse"
+                style={{ background: pickedSeller ? avaColor(pickedSeller.id) : "#616161" }}
+              >
+                {pickedSeller ? initialOf(pickedSeller.label) : "?"}
+              </div>
+              <h2>{pickedSeller ? firstNameOf(pickedSeller.label) : "Unknown caller"}</h2>
+              <p className="sub">{pickedSeller ? pickedSeller.number : "No caller ID"} · Incoming call…</p>
+              <div className="gv2-actions">
+                <button className="gv2-round gv2-decline" onClick={declineCall} title="Decline">✖</button>
+                <button className="gv2-round gv2-answer" onClick={answerCall} title="Answer">📞</button>
               </div>
             </div>
-          )}
-        </main>
+          </div>
+        )}
       </div>
     );
+  }
 
   if (stage === "connecting")
     return (
@@ -680,34 +723,42 @@ export default function InterviewClient({
       </Shell>
     );
 
-  if (stage === "live" && isTraining)
+  if (stage === "live" && isTraining) {
+    const liveColor = pickedSeller
+      ? AVA_COLORS[sellers.findIndex((x) => x.id === pickedSeller.id) % AVA_COLORS.length]
+      : "#616161";
     return (
-      <div className="candidate-bg">
-        <main className="card candidate-card fade-in call-live">
-          <div className={`gv-avatar call-avatar ${agentSpeaking ? "speaking-pulse" : ""}`}>
-            {pickedSeller ? initialOf(pickedSeller.label) : "?"}
+      <div className="gv2">
+        <div className="gv2-top">
+          <div className="gv2-logo"><span className="glyph">☎</span> Voice</div>
+          <div className="gv2-topright">
+            <span className="gv2-me">{initialOf(candidateName)}</span>
           </div>
-          <h1 style={{ fontSize: 20, margin: "12px 0 2px" }}>
-            {pickedSeller ? pickedSeller.label.split(" — ")[0] : "Unknown caller"}
-          </h1>
-          <p className="small muted" style={{ margin: 0 }}>
-            {pickedSeller ? `${pickedSeller.number} · practice call` : "No caller ID"}
-          </p>
-          <p className="call-timer">{mmss}</p>
-          <button
-            className="call-round call-decline call-end"
-            title="End call"
-            onClick={() => {
-              if (window.confirm("Hang up now? An unfinished call may not be gradeable."))
-                endSession(false);
-            }}
-          >
-            📞
-          </button>
-          <p className="small muted" style={{ marginTop: 10 }}>Hang up when the call is over — grading is automatic.</p>
-        </main>
+        </div>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="gv2-callcard" style={{ boxShadow: "none" }}>
+            <div className={`gv2-ava gv2-bigava ${agentSpeaking ? "speaking-pulse" : ""}`} style={{ background: liveColor }}>
+              {pickedSeller ? initialOf(pickedSeller.label) : "?"}
+            </div>
+            <h2>{pickedSeller ? firstNameOf(pickedSeller.label) : "Unknown caller"}</h2>
+            <p className="sub">{pickedSeller ? `${pickedSeller.number} · practice call` : "No caller ID"}</p>
+            <p className="gv2-timer">{mmss}</p>
+            <button
+              className="gv2-round gv2-end"
+              title="End call"
+              onClick={() => {
+                if (window.confirm("Hang up now? An unfinished call may not be gradeable."))
+                  endSession(false);
+              }}
+            >
+              📞
+            </button>
+            <p className="gv2-livehint">Hang up when the call is over — grading is automatic.</p>
+          </div>
+        </div>
       </div>
     );
+  }
 
   if (stage === "live" && isDrill)
     return (
