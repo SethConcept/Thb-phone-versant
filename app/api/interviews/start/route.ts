@@ -9,6 +9,7 @@ import { drawDrill, DRILLS } from "@/lib/drills";
 import { drillSystemPrompt } from "@/lib/drill-prompts";
 import { getModule } from "@/lib/modules";
 import { pathState } from "@/lib/progress";
+import { isAdminPreview } from "@/lib/admin-preview";
 
 // Trainee clicked "start". Validates the link token, logs consent, creates
 // the session row, and mints a single-use ephemeral token so the
@@ -53,7 +54,8 @@ export async function POST(req: Request) {
   if (!isTraining && (attemptsUsed ?? 0) >= MAX_ATTEMPTS)
     return NextResponse.json({ error: "All attempts have been used" }, { status: 409 });
 
-  // Learning-path gates
+  // Learning-path gates (admin preview cookie bypasses them)
+  const preview = await isAdminPreview();
   let examMeta: any = null;
   if (isDrill) {
     const mod = getModule(drill);
@@ -64,7 +66,7 @@ export async function POST(req: Request) {
       .select("module_id, quiz_score, quiz_total, quiz_passed, drill_passed")
       .eq("candidate_id", candidate.id);
     const state = pathState(rows ?? []);
-    if (!candidate.skip_modules) {
+    if (!candidate.skip_modules && !preview) {
       if (!state.unlocked(drill))
         return NextResponse.json({ error: "Finish the previous module first" }, { status: 409 });
       if (!state.byModule[drill]?.quiz_passed)
@@ -72,7 +74,7 @@ export async function POST(req: Request) {
     }
     examMeta = drawDrill(drill);
   } else if (isTraining) {
-    if (!candidate.skip_modules) {
+    if (!candidate.skip_modules && !preview) {
       const { data: rows } = await db
         .from("module_progress")
         .select("module_id, quiz_score, quiz_total, quiz_passed, drill_passed")

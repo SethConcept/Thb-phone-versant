@@ -1,13 +1,14 @@
 "use client";
 
 // Discreet admin-only unlock at the bottom of the learning-path sidebar.
-// Entering the ADMIN_UNLOCK_CODE opens every module, drill, and the test
-// for this trainee account (sets skip_modules — admin can untick it later).
+// One global code (ADMIN_UNLOCK_CODE) — entering it once stores a preview
+// cookie on THIS device, unlocking every module, drill, and the test on
+// any trainee link. No trainee records are touched.
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function AdminUnlock({ token, unlocked }: { token: string; unlocked: boolean }) {
+export default function AdminUnlock({ unlocked }: { unlocked: boolean }) {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -15,7 +16,7 @@ export default function AdminUnlock({ token, unlocked }: { token: string; unlock
 
   if (unlocked)
     return (
-      <p className="learn-adminnote">🔓 Admin preview — all content unlocked</p>
+      <p className="learn-adminnote">🔓 Admin preview — all content unlocked on this device</p>
     );
 
   async function submit(e: React.FormEvent) {
@@ -26,7 +27,7 @@ export default function AdminUnlock({ token, unlocked }: { token: string; unlock
     const res = await fetch("/api/learn/unlock", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, code }),
+      body: JSON.stringify({ code }),
     });
     setBusy(false);
     if (!res.ok) {

@@ -5,6 +5,7 @@ import { LEARN_MODULES, getModule } from "@/lib/modules";
 import { DRILLS } from "@/lib/drills";
 import { quizForClient } from "@/lib/quizzes";
 import { pathState } from "@/lib/progress";
+import { isAdminPreview } from "@/lib/admin-preview";
 import Quiz from "./quiz";
 import AdminUnlock from "./admin-unlock";
 
@@ -39,7 +40,9 @@ export default async function ModulePage({
     .eq("candidate_id", trainee.id);
 
   const state = pathState(rows ?? []);
-  const canView = trainee.skip_modules || state.unlocked(moduleId);
+  const preview = await isAdminPreview();
+  const unlockAll = preview || trainee.skip_modules;
+  const canView = unlockAll || state.unlocked(moduleId);
   const row = state.byModule[moduleId];
   const quizPassed = !!row?.quiz_passed;
   const drillPassed = !!row?.drill_passed;
@@ -64,7 +67,7 @@ export default async function ModulePage({
         </p>
         <nav>
           {LEARN_MODULES.map((m) => {
-            const open = trainee.skip_modules || state.unlocked(m.id);
+            const open = unlockAll || state.unlocked(m.id);
             const complete = state.moduleComplete(m.id);
             const cls = `learn-navitem ${m.id === moduleId ? "on" : ""} ${!open ? "locked" : ""}`;
             const label = (
@@ -83,8 +86,8 @@ export default async function ModulePage({
               </span>
             );
           })}
-          <div className={`learn-navitem learn-navtest ${state.allComplete || trainee.skip_modules ? "" : "locked"}`}>
-            {state.allComplete || trainee.skip_modules ? (
+          <div className={`learn-navitem learn-navtest ${state.allComplete || unlockAll ? "" : "locked"}`}>
+            {state.allComplete || unlockAll ? (
               <Link href={`/interview/${token}`} className="learn-testlink">
                 🏁 Certification test — unlocked
               </Link>
@@ -93,7 +96,7 @@ export default async function ModulePage({
             )}
           </div>
         </nav>
-        <AdminUnlock token={token} unlocked={!!trainee.skip_modules} />
+        <AdminUnlock unlocked={unlockAll} />
       </aside>
 
       <main className="learn-main fade-in">
@@ -131,7 +134,7 @@ export default async function ModulePage({
                   {drillPassed && <span className="pill pill-green">✓ passed</span>}
                 </div>
                 <p className="small muted" style={{ marginTop: 6 }}>{drill.intro}</p>
-                {quizPassed || trainee.skip_modules ? (
+                {quizPassed || unlockAll ? (
                   <Link className="btn" href={`/interview/${token}?drill=${moduleId}`}>
                     {drillPassed ? "Run it again" : "Start the drill"}
                   </Link>

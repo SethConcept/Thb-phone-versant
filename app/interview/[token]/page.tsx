@@ -5,6 +5,7 @@ import { SELLER_BRAND } from "@/lib/academy";
 import { CALL_SCRIPT } from "@/lib/sales-prompts";
 import { DRILLS } from "@/lib/drills";
 import { pathState } from "@/lib/progress";
+import { isAdminPreview } from "@/lib/admin-preview";
 
 export default async function InterviewPage({
   params,
@@ -50,7 +51,8 @@ export default async function InterviewPage({
   }
 
   // The full certification test is gated behind the learning path.
-  if (isTraining && !drillDef && !candidate.skip_modules) {
+  const preview = await isAdminPreview();
+  if (isTraining && !drillDef && !candidate.skip_modules && !preview) {
     const { data: rows } = await db
       .from("module_progress")
       .select("module_id, quiz_score, quiz_total, quiz_passed, drill_passed")
