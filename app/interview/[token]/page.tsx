@@ -1,11 +1,19 @@
 import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import InterviewClient from "./interview-client";
-import { SELLER_BRAND } from "@/lib/academy";
+import { SELLER_BRAND, CERT_SELLERS } from "@/lib/academy";
 import { CALL_SCRIPT } from "@/lib/sales-prompts";
 import { DRILLS } from "@/lib/drills";
 import { pathState } from "@/lib/progress";
 import { isAdminPreview } from "@/lib/admin-preview";
+
+// Client-safe roster for the phone desk: names and numbers only — the
+// persona scripts (facts, triggers) never reach the browser.
+const DESK_SELLERS = CERT_SELLERS.map((s, i) => ({
+  id: s.id,
+  label: s.label,
+  number: `(510) 555-01${String(10 + i)}`,
+}));
 
 export default async function InterviewPage({
   params,
@@ -78,6 +86,7 @@ export default async function InterviewPage({
       drillModule={drillDef ? drill! : ""}
       drillTitle={drillDef ? drillDef.title : ""}
       drillIntro={drillDef ? drillDef.intro : ""}
+      sellers={isTraining && !drillDef ? DESK_SELLERS : []}
     />
   );
 }

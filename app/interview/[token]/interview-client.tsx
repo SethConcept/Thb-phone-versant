@@ -1,11 +1,14 @@
 "use client";
 
-// Trainee-facing session flow:
-// consent -> mic check -> live voice session with Gemini -> done.
+// Trainee-facing session flow.
 //
 // Three modes:
-//   training — the certification call: one realistic inbound seller call
-//              (dealt persona + embedded lines), auto-graded on completion
+//   training — the phone desk: a Google-Voice-style screen with the seller
+//              roster. Random incoming call (counts toward certification) or
+//              dial a specific seller (practice). The line RINGS in the UI,
+//              the trainee answers, and the AI caller waits silently for
+//              their greeting — no announcements, no fake ring sounds from
+//              the AI. Auto-graded on hangup.
 //   drill    — a 2-4 minute module mini-drill, auto-graded on completion
 //   sales    — practice call vs "John" with the script on screen
 //
@@ -14,13 +17,19 @@
 // Transcript: input/output transcription events accumulated locally,
 //             uploaded with the mic recording (webm) on session end.
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GoogleGenAI, Modality } from "@google/genai";
 import { SELLER_BRAND } from "@/lib/academy";
 
 type Turn = { role: "agent" | "candidate"; text: string; ts: number };
-type Stage = "consent" | "miccheck" | "connecting" | "live" | "uploading" | "done" | "error";
-type DrillResult = { graded: boolean; pass: boolean; reason: string; summary: string; coaching: string };
+type Stage =
+  | "consent" | "miccheck" | "desk" | "ringing"
+  | "connecting" | "live" | "uploading" | "done" | "error";
+type AutoResult = {
+  graded: boolean; pass: boolean; reason: string; summary: string;
+  coaching: string; picked?: boolean; who?: string;
+};
+type DeskSeller = { id: string; label: string; number: string };
 
 const SALES_CAP_MS = 8 * 60 * 1000;
 const TRAINING_CAP_MS = 12 * 60 * 1000;
@@ -30,7 +39,8 @@ const MAX_SALES_ATTEMPTS = 3;
 const END_MARKERS = ["TEST COMPLETE", "CALL COMPLETE", "DRILL COMPLETE"];
 
 const STEP_OF: Record<Stage, number> = {
-  consent: 1, miccheck: 2, connecting: 3, live: 3, uploading: 4, done: 4, error: 1,
+  consent: 1, miccheck: 2, desk: 3, ringing: 3,
+  connecting: 3, live: 3, uploading: 4, done: 4, error: 1,
 };
 
 // Module-level so React treats it as a stable component — defining it inside
@@ -54,6 +64,8 @@ function Shell({ step, children }: { step: number; children: React.ReactNode }) 
   );
 }
 
+const initialOf = (label: string) => (label.trim()[0] || "?").toUpperCase();
+
 export default function InterviewClient({
   token,
   candidateName,
@@ -63,6 +75,7 @@ export default function InterviewClient({
   drillModule = "",
   drillTitle = "",
   drillIntro = "",
+  sellers = [],
 }: {
   token: string;
   candidateName: string;
@@ -72,20 +85,28 @@ export default function InterviewClient({
   drillModule?: string;
   drillTitle?: string;
   drillIntro?: string;
+  sellers?: DeskSeller[];
 }) {
   const isTraining = mode === "training";
   const isDrill = mode === "drill";
   const [stage, setStage] = useState<Stage>("consent");
   const [error, setError] = useState("");
   const [agentSpeaking, setAgentSpeaking] = useState(false);
-  const [drillResult, setDrillResult] = useState<DrillResult | null>(null);
-  const [certResult, setCertResult] = useState<DrillResult | null>(null);
+  const [autoResult, setAutoResult] = useState<AutoResult | null>(null);
   const [notes, setNotes] = useState("");
   const notesRef = useRef("");
   const [micLevel, setMicLevel] = useState(0);
   const [micOk, setMicOk] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
   const micCheckCleanupRef = useRef<() => void>(() => {});
+
+  // phone-desk state (training)
+  const [pickedSeller, setPickedSeller] = useState<DeskSeller | null>(null);
+  const [dial, setDial] = useState("");
+  const [dialError, setDialError] = useState("");
+  const [callSec, setCallSec] = useState(0);
+  const ringRef = useRef<{ ctx: AudioContext; timer: ReturnType<typeof setInterval> } | null>(null);
+  const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const transcriptRef = useRef<Turn[]>([]);
   const sessionRef = useRef<any>(null);
@@ -98,6 +119,8 @@ export default function InterviewClient({
   // screen can show WHY instead of failing silently
   const failReasonRef = useRef<string>("");
   const flushTurnsRef = useRef<() => void>(() => {});
+
+  useEffect(() => () => { stopRing(); if (callTimerRef.current) clearInterval(callTimerRef.current); }, []);
 
   // Consent accepted → open the mic and show a live level meter so the
   // trainee can SEE their voice registering before anything counts.
@@ -139,6 +162,90 @@ export default function InterviewClient({
     }
   }
 
+  // ---- phone-desk helpers (training) ----
+
+  // Classic US ring: 440+480Hz bursts, ~2s on / ~4s off.
+  function startRing() {
+    try {
+      const ctx = new AudioContext();
+      const burst = () => {
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.connect(ctx.destination);
+        const o1 = ctx.createOscillator();
+        const o2 = ctx.createOscillator();
+        o1.frequency.value = 440;
+        o2.frequency.value = 480;
+        o1.connect(gain); o2.connect(gain);
+        o1.start(); o2.start();
+        o1.stop(ctx.currentTime + 1.8); o2.stop(ctx.currentTime + 1.8);
+      };
+      burst();
+      const timer = setInterval(burst, 5000);
+      ringRef.current = { ctx, timer };
+    } catch {}
+  }
+
+  function stopRing() {
+    const r = ringRef.current;
+    if (!r) return;
+    clearInterval(r.timer);
+    try { r.ctx.close(); } catch {}
+    ringRef.current = null;
+  }
+
+  function incomingCall(seller: DeskSeller | null) {
+    setPickedSeller(seller);
+    setDialError("");
+    setStage("ringing");
+    startRing();
+  }
+
+  function dialSeller() {
+    const q = dial.trim().toLowerCase();
+    if (!q) return;
+    const digits = q.replace(/\D/g, "");
+    const match = sellers.find(
+      (s) =>
+        s.label.toLowerCase().includes(q) ||
+        (digits.length >= 4 && s.number.replace(/\D/g, "").endsWith(digits))
+    );
+    if (!match) {
+      setDialError("No seller matches that name or number.");
+      return;
+    }
+    setDial("");
+    incomingCall(match);
+  }
+
+  function answerCall() {
+    stopRing();
+    start();
+  }
+
+  function declineCall() {
+    stopRing();
+    setPickedSeller(null);
+    setStage("desk");
+  }
+
+  // After a finished call, return to the desk with a clean slate.
+  function backToDesk() {
+    endedRef.current = false;
+    transcriptRef.current = [];
+    chunksRef.current = [];
+    recorderRef.current = null;
+    sessionRef.current = null;
+    interviewIdRef.current = "";
+    failReasonRef.current = "";
+    streamRef.current = null; // tracks were stopped — start() re-acquires
+    setAutoResult(null);
+    setAgentSpeaking(false);
+    setCallSec(0);
+    setPickedSeller(null);
+    setStage("desk");
+  }
+
   async function start() {
     micCheckCleanupRef.current(); // stop the meter; keep the stream
     setStage("connecting");
@@ -147,7 +254,11 @@ export default function InterviewClient({
       const res = await fetch("/api/interviews/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, ...(isDrill ? { drill: drillModule } : {}) }),
+        body: JSON.stringify({
+          token,
+          ...(isDrill ? { drill: drillModule } : {}),
+          ...(isTraining && pickedSeller ? { persona: pickedSeller.id } : {}),
+        }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -158,10 +269,12 @@ export default function InterviewClient({
 
       // 2. Mic (already granted during mic check)
       const stream =
-        streamRef.current ??
-        (await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-        }));
+        streamRef.current && streamRef.current.getTracks().some((t) => t.readyState === "live")
+          ? streamRef.current
+          : await navigator.mediaDevices.getUserMedia({
+              audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+            });
+      streamRef.current = stream;
 
       // 3. Playback pipeline for model audio (24kHz PCM), plus a mix bus so
       // the recording captures BOTH sides of the conversation
@@ -290,8 +403,14 @@ export default function InterviewClient({
         isDrill ? DRILL_CAP_MS : isTraining ? TRAINING_CAP_MS : SALES_CAP_MS
       );
 
+      // call duration ticker
+      setCallSec(0);
+      if (callTimerRef.current) clearInterval(callTimerRef.current);
+      callTimerRef.current = setInterval(() => setCallSec((s) => s + 1), 1000);
+
       cleanupRef.current = () => {
         clearTimeout(capTimer);
+        if (callTimerRef.current) { clearInterval(callTimerRef.current); callTimerRef.current = null; }
         try { proc.disconnect(); src.disconnect(); } catch {}
         try { micCtx.close(); playCtx.close(); } catch {}
         try { stream.getTracks().forEach((t) => t.stop()); } catch {}
@@ -310,7 +429,7 @@ export default function InterviewClient({
     endedRef.current = true;
     setStage("uploading");
     flushTurnsRef.current();
-    // If the examiner already delivered its closing line, this session IS
+    // If the caller already delivered its closing line, this session IS
     // complete — even if the trainee clicked End during the goodbye.
     if (!completed) {
       completed = transcriptRef.current.some(
@@ -341,13 +460,14 @@ export default function InterviewClient({
     try {
       const res = await fetch("/api/interviews/complete", { method: "POST", body: form });
       const data = await res.json().catch(() => null);
-      if (data?.drill) setDrillResult(data.drill);
-      if (data?.cert) setCertResult(data.cert);
+      if (data?.drill) setAutoResult(data.drill);
+      if (data?.cert) setAutoResult(data.cert);
     } catch {}
     setStage("done");
   }
 
   const step = STEP_OF[stage];
+  const mmss = `${Math.floor(callSec / 60)}:${String(callSec % 60).padStart(2, "0")}`;
 
   if (stage === "consent")
     return (
@@ -433,7 +553,7 @@ export default function InterviewClient({
         )}
         {isTraining && (
           <p className="small muted" style={{ margin: "8px 0" }}>
-            When you start, your line rings — <strong>you answer it and speak first</strong>, exactly like a real inbound call.
+            Next: your phone desk. When a call comes in, <strong>answer it and speak first</strong> — exactly like a real inbound call.
           </p>
         )}
         {isDrill && (
@@ -441,19 +561,152 @@ export default function InterviewClient({
             The examiner starts the drill as soon as you&apos;re connected.
           </p>
         )}
-        <button className="btn btn-lg" disabled={!micOk} onClick={start}>
-          {isDrill ? "🎙 Start the drill" : isTraining ? "📞 Take the certification call" : "📞 Call John"}
+        <button
+          className="btn btn-lg"
+          disabled={!micOk}
+          onClick={() => {
+            if (isTraining) {
+              micCheckCleanupRef.current();
+              setStage("desk");
+            } else {
+              start();
+            }
+          }}
+        >
+          {isDrill ? "🎙 Start the drill" : isTraining ? "☎️ Open my phone desk" : "📞 Call John"}
         </button>
       </Shell>
+    );
+
+  if (stage === "desk" || stage === "ringing")
+    return (
+      <div className="candidate-bg" style={{ alignItems: "stretch" }}>
+        <main className="card gv-shell fade-in">
+          <div className="gv-top">
+            <div>
+              <div className="gv-brand">☎️ {SELLER_BRAND} — Phone Desk</div>
+              <div className="small muted">Answering as {candidateName} · line (510) 394-0100</div>
+            </div>
+            <a href={`/learn/${token}`} className="small">← My learning path</a>
+          </div>
+
+          <div className="gv-body">
+            <aside className="gv-side">
+              <div className="gv-side-head">Sellers</div>
+              {sellers.map((s) => (
+                <div key={s.id} className="gv-row">
+                  <span className="gv-avatar">{initialOf(s.label)}</span>
+                  <span className="gv-row-main">
+                    <span className="gv-row-name">{s.label}</span>
+                    <span className="gv-row-num">{s.number}</span>
+                  </span>
+                  <button
+                    className="gv-callbtn"
+                    title={`Practice call with ${s.label}`}
+                    onClick={() => incomingCall(s)}
+                  >
+                    📞
+                  </button>
+                </div>
+              ))}
+              <p className="small muted" style={{ padding: "10px 12px" }}>
+                Dialing a specific seller is <strong>practice</strong> — graded, but it doesn&apos;t count toward certification.
+              </p>
+            </aside>
+
+            <section className="gv-main">
+              <div className="gv-next">
+                <h2 style={{ margin: "0 0 6px", fontSize: 20 }}>Ready for the next call?</h2>
+                <p className="small muted" style={{ margin: "0 0 14px" }}>
+                  A seller who saw the TV ad is on the line — you won&apos;t know who until you answer. Counts toward your certification: 12 passed calls, 6 different sellers.
+                </p>
+                <button className="btn btn-lg" onClick={() => incomingCall(null)}>
+                  📞 Take the next call
+                </button>
+              </div>
+
+              <div className="gv-dial">
+                <div className="gv-side-head" style={{ padding: 0, marginBottom: 8 }}>Or dial a seller (practice)</div>
+                <div className="row" style={{ flexWrap: "nowrap" }}>
+                  <input
+                    className="input"
+                    placeholder="Type a name or number…"
+                    value={dial}
+                    list="gv-sellers"
+                    onChange={(e) => { setDial(e.target.value); setDialError(""); }}
+                    onKeyDown={(e) => e.key === "Enter" && dialSeller()}
+                  />
+                  <button className="btn" onClick={dialSeller} disabled={!dial.trim()}>Call</button>
+                </div>
+                <datalist id="gv-sellers">
+                  {sellers.map((s) => (
+                    <option key={s.id} value={s.label.split(" — ")[0]}>{s.number}</option>
+                  ))}
+                </datalist>
+                {dialError && <p className="small" style={{ color: "var(--red)", margin: "6px 0 0" }}>{dialError}</p>}
+              </div>
+            </section>
+          </div>
+
+          {stage === "ringing" && (
+            <div className="call-overlay">
+              <div className="call-card fade-in">
+                <div className="gv-avatar call-avatar ringing-pulse">
+                  {pickedSeller ? initialOf(pickedSeller.label) : "?"}
+                </div>
+                <h2 style={{ margin: "12px 0 2px", fontSize: 20 }}>
+                  {pickedSeller ? pickedSeller.label.split(" — ")[0] : "Unknown caller"}
+                </h2>
+                <p className="small muted" style={{ margin: 0 }}>
+                  {pickedSeller ? pickedSeller.number : "No caller ID"} · incoming call…
+                </p>
+                <div className="row" style={{ justifyContent: "center", gap: 18, marginTop: 22 }}>
+                  <button className="call-round call-decline" onClick={declineCall} title="Decline">✖</button>
+                  <button className="call-round call-answer" onClick={answerCall} title="Answer">📞</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
     );
 
   if (stage === "connecting")
     return (
       <Shell step={step}>
-        <h1 style={{ fontSize: 22 }}>{mode === "sales" ? "Ringing John…" : "Connecting your line…"}</h1>
+        <h1 style={{ fontSize: 22 }}>{mode === "sales" ? "Ringing John…" : "Connecting…"}</h1>
         <div className="spinner" />
-        <p className="muted">{mode === "sales" ? "He usually picks up fast." : isDrill ? "The drill starts as soon as they pick up." : "It rings as soon as you\u2019re connected."}</p>
+        <p className="muted">{mode === "sales" ? "He usually picks up fast." : isTraining ? "Picking up the line…" : "The drill starts as soon as they pick up."}</p>
       </Shell>
+    );
+
+  if (stage === "live" && isTraining)
+    return (
+      <div className="candidate-bg">
+        <main className="card candidate-card fade-in call-live">
+          <div className={`gv-avatar call-avatar ${agentSpeaking ? "speaking-pulse" : ""}`}>
+            {pickedSeller ? initialOf(pickedSeller.label) : "?"}
+          </div>
+          <h1 style={{ fontSize: 20, margin: "12px 0 2px" }}>
+            {pickedSeller ? pickedSeller.label.split(" — ")[0] : "Unknown caller"}
+          </h1>
+          <p className="small muted" style={{ margin: 0 }}>
+            {pickedSeller ? `${pickedSeller.number} · practice call` : "No caller ID"}
+          </p>
+          <p className="call-timer">{mmss}</p>
+          <button
+            className="call-round call-decline call-end"
+            title="End call"
+            onClick={() => {
+              if (window.confirm("Hang up now? An unfinished call may not be gradeable."))
+                endSession(false);
+            }}
+          >
+            📞
+          </button>
+          <p className="small muted" style={{ marginTop: 10 }}>Hang up when the call is over — grading is automatic.</p>
+        </main>
+      </div>
     );
 
   if (stage === "live" && isDrill)
@@ -474,28 +727,6 @@ export default function InterviewClient({
           }}
         >
           End drill early
-        </button>
-      </Shell>
-    );
-
-  if (stage === "live" && isTraining)
-    return (
-      <Shell step={step}>
-        <div className={`orb ${agentSpeaking ? "orb-speaking" : "orb-listening"}`}>
-          {agentSpeaking ? "🗣️" : "🎙️"}
-        </div>
-        <h1 style={{ fontSize: 20 }}>
-          {agentSpeaking ? "Seller speaking…" : "Your line — speak"}
-        </h1>
-        <p className="muted small">Certification call. Handle it start to finish — it ends when the call ends.</p>
-        <button
-          className="btn btn-ghost"
-          onClick={() => {
-            if (window.confirm("Hang up now? An unfinished call may not be gradeable."))
-              endSession(false);
-          }}
-        >
-          Hang up
         </button>
       </Shell>
     );
@@ -560,11 +791,12 @@ export default function InterviewClient({
           <p className="notice notice-gray small" style={{ color: "var(--red)", wordBreak: "break-all" }}>
             {failReasonRef.current}
           </p>
+          {isTraining && <button className="btn btn-secondary" onClick={backToDesk}>Back to the phones</button>}
         </Shell>
       );
 
     if (isDrill) {
-      const r = drillResult;
+      const r = autoResult;
       return (
         <Shell step={step}>
           {r?.graded ? (
@@ -608,44 +840,36 @@ export default function InterviewClient({
     }
 
     if (isTraining) {
-      const r = certResult;
+      const r = autoResult;
       return (
         <Shell step={step}>
           {r?.graded ? (
-            r.pass ? (
-              <>
-                <h1>✅ Call passed!</h1>
-                <p>
-                  <span className="pill pill-green" style={{ fontSize: 14 }}>{r.summary}</span>
-                </p>
+            <>
+              <h1>{r.pass ? "✅ Call passed!" : "Not this one — take another call"}</h1>
+              {r.who && (
+                <p className="small muted" style={{ marginTop: 0 }}>That was: <strong>{r.who}</strong></p>
+              )}
+              <p>
+                <span className={`pill ${r.pass ? "pill-green" : "pill-red"}`} style={{ fontSize: 14 }}>{r.summary}</span>
+                {r.picked && <span className="pill pill-blue" style={{ fontSize: 12, marginLeft: 8 }}>practice — doesn&apos;t count toward certification</span>}
+              </p>
+              {!r.pass && r.reason && <p className="small" style={{ color: "var(--red)" }}>{r.reason}</p>}
+              {r.pass && !r.picked && (
                 <p className="small muted">This one counts toward your certification — 12 passed calls across 6 different sellers.</p>
-                {r.coaching && <p className="small muted">Coach&apos;s note: {r.coaching}</p>}
-                <div className="row" style={{ justifyContent: "center" }}>
-                  <button className="btn" onClick={() => window.location.reload()}>📞 Take another call</button>
-                  <a className="btn btn-ghost" href={`/learn/${token}`}>Back to my learning path</a>
-                </div>
-              </>
-            ) : (
-              <>
-                <h1>Not this one — take another call</h1>
-                <p>
-                  <span className="pill pill-red" style={{ fontSize: 14 }}>{r.summary}</span>
-                </p>
-                {r.reason && <p className="small" style={{ color: "var(--red)" }}>{r.reason}</p>}
-                {r.coaching && <p className="small muted">Coach&apos;s note: {r.coaching}</p>}
-                <div className="row" style={{ justifyContent: "center" }}>
-                  <button className="btn" onClick={() => window.location.reload()}>📞 Take another call</button>
-                  <a className="btn btn-ghost" href={`/learn/${token}`}>Back to my learning path</a>
-                </div>
-              </>
-            )
+              )}
+              {r.coaching && <p className="small muted">Coach&apos;s note: {r.coaching}</p>}
+              <div className="row" style={{ justifyContent: "center" }}>
+                <button className="btn" onClick={backToDesk}>☎️ Back to the phones</button>
+                <a className="btn btn-ghost" href={`/learn/${token}`}>My learning path</a>
+              </div>
+            </>
           ) : (
             <>
               <h1>Call saved</h1>
               <p className="small muted">We couldn&apos;t grade it automatically this time — the team can grade it manually, or just take another call.</p>
               <div className="row" style={{ justifyContent: "center" }}>
-                <button className="btn" onClick={() => window.location.reload()}>📞 Take another call</button>
-                <a className="btn btn-ghost" href={`/learn/${token}`}>Back to my learning path</a>
+                <button className="btn" onClick={backToDesk}>☎️ Back to the phones</button>
+                <a className="btn btn-ghost" href={`/learn/${token}`}>My learning path</a>
               </div>
             </>
           )}
@@ -659,17 +883,15 @@ export default function InterviewClient({
       <Shell step={step}>
         <h1>✅ All done, {candidateName}!</h1>
         <p>Your practice call was submitted. The {SELLER_BRAND} team will review it and get back to you.</p>
-        {(
-          salesRetakesLeft > 0 && (
-            <>
-              <p className="small muted">
-                Not your best run? You may retake this call {salesRetakesLeft} more {salesRetakesLeft === 1 ? "time" : "times"}. The team sees all attempts.
-              </p>
-              <button className="btn btn-secondary" onClick={() => window.location.reload()}>
-                Retake call ({salesRetakesLeft} left)
-              </button>
-            </>
-          )
+        {salesRetakesLeft > 0 && (
+          <>
+            <p className="small muted">
+              Not your best run? You may retake this call {salesRetakesLeft} more {salesRetakesLeft === 1 ? "time" : "times"}. The team sees all attempts.
+            </p>
+            <button className="btn btn-secondary" onClick={() => window.location.reload()}>
+              Retake call ({salesRetakesLeft} left)
+            </button>
+          </>
         )}
       </Shell>
     );

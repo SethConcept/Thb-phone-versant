@@ -111,9 +111,10 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
     })
   );
 
-  // Certification progress: passed FULL TESTS + distinct personas passed
+  // Certification progress: passed CERT CALLS (practice calls excluded)
   const testAttempts = withAudio.filter((iv) => (iv.exam_meta as any)?.kind !== "drill");
-  const passedTests = testAttempts.filter((iv) => latestScore(iv)?.verdict === "PASS");
+  const gateAttempts = testAttempts.filter((iv) => !(iv.exam_meta as any)?.picked);
+  const passedTests = gateAttempts.filter((iv) => latestScore(iv)?.verdict === "PASS");
   const personasPassed = new Set(
     passedTests.map((iv) => (iv.exam_meta as any)?.persona).filter(Boolean)
   );
@@ -209,7 +210,7 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
             <h2 style={{ fontSize: 16, margin: 0 }}>
               {isDrillAttempt
                 ? `🎙 Drill · ${drillDef?.title ?? draw.module}`
-                : `${isTraining ? "🏁 Certification call" : "Attempt"} ${withAudio.length - idx}`}
+                : `${isTraining ? (draw?.picked ? "📞 Practice call" : "🏁 Certification call") : "Attempt"} ${withAudio.length - idx}`}
               {!isDrillAttempt && isTraining && draw?.persona && (
                 <span className="pill pill-gray" style={{ marginLeft: 8, fontWeight: 400 }}>
                   Seller: {personaLabel(draw.persona)}

@@ -450,6 +450,7 @@ export type ExamDraw = {
   kind: "cert" | "versant"; // 'versant' = legacy sectioned-test draws
   persona: string; // SellerPersona id
   items?: string[]; // cert: embedded item ids (pressure lines + questions)
+  picked?: boolean; // trainee chose this seller — practice call, not gate-counted
   partB?: string[]; // legacy
   partC?: string[]; // legacy
 };
@@ -466,16 +467,22 @@ function pick<T extends { id: string }>(pool: T[], n: number): T[] {
 // Deal the certification seller WITHOUT replacement: pass the persona ids
 // already seen in the trainee's current cycle; when the whole deck has been
 // seen, the cycle resets. Guarantees the first 10 calls cover all 10 sellers.
-export function drawExam(seenPersonas: string[] = []): ExamDraw {
+// A forced persona (trainee dialed a specific seller) is a PRACTICE call —
+// graded identically but flagged `picked` so it never counts toward the gate.
+export function drawExam(seenPersonas: string[] = [], forcedPersona?: string): ExamDraw {
+  const items = [
+    ...pick(PRESSURE_LINES, 2).map((x) => x.id),
+    ...pick(SHORT_ANSWERS, 2).map((x) => x.id),
+  ];
+  if (forcedPersona && CERT_SELLERS.some((s) => s.id === forcedPersona)) {
+    return { kind: "cert", persona: forcedPersona, items, picked: true };
+  }
   const remaining = CERT_SELLERS.filter((s) => !seenPersonas.includes(s.id));
   const deck = remaining.length > 0 ? remaining : CERT_SELLERS;
   return {
     kind: "cert",
     persona: deck[Math.floor(Math.random() * deck.length)].id,
-    items: [
-      ...pick(PRESSURE_LINES, 2).map((x) => x.id),
-      ...pick(SHORT_ANSWERS, 2).map((x) => x.id),
-    ],
+    items,
   };
 }
 

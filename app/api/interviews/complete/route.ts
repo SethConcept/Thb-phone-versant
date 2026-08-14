@@ -5,6 +5,7 @@ import { SCORING_MODEL } from "@/lib/models";
 import { drillScoringPrompt } from "@/lib/drill-prompts";
 import { drillVerdict } from "@/lib/drills";
 import { versantScoringPrompt, versantVerdict } from "@/lib/versant-prompts";
+import { resolveDraw } from "@/lib/academy";
 
 // Called by the session page when it ends (complete or aborted).
 // Saves transcript + audio recording, marks the trainee as interviewed.
@@ -180,6 +181,8 @@ export async function POST(req: Request) {
           reason: v.reason,
           summary: `call ${v.criteriaScore}/10 · seller lines ${v.itemsPassed}/${v.itemsTotal}`,
           coaching: parsed.coaching_note || "",
+          picked: !!interview.exam_meta.picked,
+          who: resolveDraw(interview.exam_meta).persona.label,
         },
       });
     } catch (e: any) {

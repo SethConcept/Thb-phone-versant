@@ -21,7 +21,7 @@ import { isAdminPreview } from "@/lib/admin-preview";
 //                       the trainee has the admin skip_modules override)
 //   sales             — practice call vs "John" (max 3 attempts, easy/hard)
 export async function POST(req: Request) {
-  const { token, drill } = await req.json().catch(() => ({}));
+  const { token, drill, persona } = await req.json().catch(() => ({}));
   if (!token) return NextResponse.json({ error: "Missing token" }, { status: 400 });
 
   const db = supabaseAdmin();
@@ -88,6 +88,7 @@ export async function POST(req: Request) {
     }
     // Deal the seller without replacement: exclude personas already seen in
     // the trainee's current cycle so the first 10 calls cover all 10 sellers.
+    // A specific dialed seller (persona param) becomes a practice call.
     const { data: past } = await db
       .from("interviews")
       .select("exam_meta, started_at")
@@ -96,9 +97,12 @@ export async function POST(req: Request) {
       .order("started_at", { ascending: true });
     const personaHistory = (past ?? [])
       .map((r: any) => r.exam_meta)
-      .filter((m: any) => m && m.kind !== "drill" && m.persona)
+      .filter((m: any) => m && m.kind !== "drill" && m.persona && !m.picked)
       .map((m: any) => m.persona as string);
-    examMeta = drawExam(currentCycleSeen(personaHistory));
+    examMeta = drawExam(
+      currentCycleSeen(personaHistory),
+      typeof persona === "string" && persona ? persona : undefined
+    );
   }
 
   const { data: interview, error } = await db
