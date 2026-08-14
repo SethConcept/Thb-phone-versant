@@ -48,9 +48,9 @@ export const LEARN_MODULES: ModuleDef[] = [
 <div class="ac-card">
   <h3>Who does what</h3>
   <table class="ac-table"><tbody>
-    <tr><td><b>Thea, Trining</b></td><td>Answer, build trust, qualify, book or hand off. You are the first voice of the company.</td></tr>
+    <tr><td><b>Thea</b></td><td>Answer, build trust, qualify, book or hand off. You are the first voice of the company.</td></tr>
     <tr><td><b>Cherry</b></td><td>Closer. Qualified sellers come to her live. She also reviews your drills.</td></tr>
-    <tr><td><b>Juan</b></td><td>Owner, licensed contractor, CSLB. He walks the property. He takes escalations and callers who ask for him by name.</td></tr>
+    <tr><td><b>Juan</b></td><td>Owner, licensed contractor, CSLB. He walks the property, and takes escalations and callers who ask for him by name. He also closes — but only as backup, when Cherry isn't around.</td></tr>
   </tbody></table>
 </div>`,
   },

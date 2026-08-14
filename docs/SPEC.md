@@ -8,7 +8,7 @@ trainee can't grade themselves. This repo is sales-training only; it was
 split out of THB-HR-VOICE (whose `main` remains the HR voice screener),
 and the HR/hiring code was removed in the split.
 
-**Who it's for:** the Iriga seller-line team (Thea, Trining, Cherry) and any
+**Who it's for:** the Iriga seller-line team (Thea, Cherry) and any
 future seller-line hire. Cherry/Juan review results in admin.
 
 ## The learning path (trainee home: /learn/&lt;token&gt;)
@@ -17,8 +17,9 @@ Eight gated modules (content ported from the courseware), each completed by
 its 4-question server-graded quiz (pass at 3, instantly retakeable).
 Quizzes alone gate progression; completing all eight unlocks the
 certification calls. Admin can bypass the gate per trainee
-(`candidates.skip_modules`) or site-wide with the ADMIN_UNLOCK_CODE
-preview cookie.
+(`candidates.skip_modules`) or site-wide with ADMIN_UNLOCK_CODE: entering
+it once (sidebar "Admin" form) flips the `global_unlock` flag in
+`app_settings` and unlocks everything for everyone until "Lock again".
 
 ## The drill room (optional, never graded)
 

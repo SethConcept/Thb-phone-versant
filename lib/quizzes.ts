@@ -28,7 +28,7 @@ export const QUIZZES: Record<string, QuizQuestion[]> = {
       q: "Who takes a qualified seller who is ready to talk price right now?",
       options: ["Whoever answered the phone", "Juan, always", "Cherry — the closer, live if she's on shift", "Nobody — book an appointment instead"],
       answer: 2,
-      why: "Qualified plus a closer on shift means a live handoff to Cherry. You qualify and build trust; she closes.",
+      why: "Qualified plus a closer on shift means a live handoff to Cherry. You qualify and build trust; she closes. Juan closes too, but only as backup when Cherry isn't around.",
     },
     {
       q: "A caller asks why Juan is out at properties instead of in an office. That's…",

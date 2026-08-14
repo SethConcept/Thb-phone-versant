@@ -72,12 +72,22 @@ create table module_progress (
   unique (candidate_id, module_id)
 );
 
+create table app_settings (
+  key text primary key,
+  value text not null,
+  updated_at timestamptz default now()
+);
+-- Holds the site-wide admin unlock flag (key 'global_unlock'): entering
+-- ADMIN_UNLOCK_CODE anywhere unlocks all content for everyone until it's
+-- locked again from the same form.
+
 -- Lock everything down. The app's server routes use the service-role key
 -- (bypasses RLS). Logged-in admins get full read/write.
 alter table candidates enable row level security;
 alter table interviews enable row level security;
 alter table scores enable row level security;
 alter table module_progress enable row level security;
+alter table app_settings enable row level security;
 
 create policy "admins full access" on candidates
   for all to authenticated using (true) with check (true);
@@ -86,6 +96,8 @@ create policy "admins full access" on interviews
 create policy "admins full access" on scores
   for all to authenticated using (true) with check (true);
 create policy "admins full access" on module_progress
+  for all to authenticated using (true) with check (true);
+create policy "admins full access" on app_settings
   for all to authenticated using (true) with check (true);
 
 -- Storage: create a PRIVATE bucket named `interview-audio` in the dashboard

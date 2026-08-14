@@ -14,9 +14,10 @@ certification test, plus a sales practice mode and the courseware:
    right after each answer. Two admin bypasses for dry runs: the
    per-trainee "skip module gate" checkbox in admin, and the global
    `ADMIN_UNLOCK_CODE` (env var) — type it once under "Admin" at the
-   bottom of any learning-path sidebar and that device gets a 30-day
-   preview cookie unlocking everything on every trainee link, without
-   touching trainee records.
+   bottom of any learning-path sidebar and **everything unlocks for
+   everyone** (every device, every trainee link) without touching trainee
+   records, until someone with the code uses "Lock again" on the same
+   form.
 
 2. **📞 The certification call** — ONE realistic inbound call, ~5 minutes,
    auto-graded the moment it ends. The line rings, the trainee answers with
