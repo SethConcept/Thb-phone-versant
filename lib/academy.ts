@@ -358,15 +358,67 @@ export type CertSeller = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// REAL LISTINGS — SWAP BLOCK. These three are live Redfin listings used so
-// trainees can actually look the property up mid-call (that's the test).
-// Listings go stale after they sell: to refresh, find a similar active
-// listing on Redfin and replace address/city/beds/baths/price/url below.
-// Requirements: TERRI = any CA manufactured home IN A PARK (land lease);
-// MARCUS = any modest house OUTSIDE California; JONATHAN = any $2M+ premium
-// Peninsula house. Nothing else in the code needs to change.
+// REAL LISTINGS — SWAP BLOCK. ALL TEN are live Redfin listings, so looking
+// the address up mid-call becomes a habit on every single call. Listings go
+// stale after they sell (location/type/price history survive on Redfin, so
+// lessons keep working) — to refresh, find a similar active listing and
+// replace address/city/beds/baths/price/url below. Requirements per slot:
+//   TERRI    = any CA manufactured home IN A PARK (land lease) → kind no
+//   MARCUS   = any modest house OUTSIDE California → kind no
+//   JONATHAN = any $2M+ premium Peninsula house → escalate
+//   the rest = any modest listing in a THB-footprint city that fits the story
+// Nothing else in the code needs to change.
 // ═══════════════════════════════════════════════════════════════════════════
 const REAL_LISTINGS: Record<string, PropertyFacts> = {
+  dolores: {
+    address: "3412 13th Ave", city: "Oakland", state: "CA",
+    beds: 2, baths: 1, sqft: 892, yearBuilt: 1923, listPrice: 599000,
+    type: "house", note: "split-level Craftsman, Bella Vista neighborhood; MLS# 41144945",
+    sourceUrl: "https://www.redfin.com/CA/Oakland/3412-13th-Ave-94610/home/1606723",
+    verified: "2026-08-14",
+  },
+  renee: {
+    address: "2241 Kelly St", city: "Hayward", state: "CA",
+    beds: 4, baths: 3, sqft: 2151, yearBuilt: 1941, listPrice: 1100000,
+    type: "house", note: "MLS# 41144992",
+    sourceUrl: "https://www.redfin.com/CA/Hayward/2241-Kelly-St-94541/home/1551122",
+    verified: "2026-08-14",
+  },
+  dave: {
+    address: "278 Estabrook St", city: "San Leandro", state: "CA",
+    beds: 2, baths: 1.5, sqft: 1200, yearBuilt: 1993, listPrice: 499000,
+    type: "townhouse", note: "end-unit townhome-style condo, HOA; MLS# 41144670",
+    sourceUrl: "https://www.redfin.com/CA/San-Leandro/278-Estabrook-St-94577/home/665380",
+    verified: "2026-08-14",
+  },
+  gloria: {
+    address: "2917 Burnette St", city: "Vallejo", state: "CA",
+    beds: 2, baths: 1, listPrice: 370000,
+    type: "house", note: "modest older Vallejo house",
+    sourceUrl: "https://www.redfin.com/CA/Vallejo/2917-Burnette-St-94591/home/2294877",
+    verified: "2026-08-14",
+  },
+  sam: {
+    address: "8132 Pioneer Dr", city: "Bakersfield", state: "CA",
+    beds: 3, baths: 1, sqft: 1048, yearBuilt: 1953, listPrice: 299000,
+    type: "house", note: "rental-grade post-war house; MLS# 202608763",
+    sourceUrl: "https://www.redfin.com/CA/Bakersfield/8132-Pioneer-Dr-93306/home/60531659",
+    verified: "2026-08-14",
+  },
+  priya: {
+    address: "1413 Post Ave", city: "San Pablo", state: "CA",
+    beds: 3, baths: 1, sqft: 1284, yearBuilt: 1950, listPrice: 319000,
+    type: "house", note: "listing's own words: 'Total fixer needs everything'; MLS# 41143761",
+    sourceUrl: "https://www.redfin.com/CA/San-Pablo/1413-Post-Ave-94806/home/1777276",
+    verified: "2026-08-14",
+  },
+  victor: {
+    address: "36182 Magellan Dr", city: "Fremont", state: "CA",
+    beds: 4, baths: 2, sqft: 1882, yearBuilt: 1972, listPrice: 1198000,
+    type: "house", note: "updated 4/2 — list price sits right at Victor's Zillow anchor; MLS# ML82056854",
+    sourceUrl: "https://www.redfin.com/CA/Fremont/36182-Magellan-Dr-94536/home/1921409",
+    verified: "2026-08-14",
+  },
   terri: {
     address: "300 San Marcus Dr",
     city: "Vallejo",
@@ -419,7 +471,7 @@ export const CERT_SELLERS: CertSeller[] = [
     facts: "You are DOLORES, 68. Your husband Ray passed this spring; the house is too quiet now and you're moving near your daughter in Sacramento. You mention Ray only if treated gently — it comes out in fragments, and you sometimes trail off mid-sentence. Owned the house 40 years, no mortgage. Original kitchen, roof is fine. Timing: 'before the holidays' feels right. How you heard of us: 'the morning commercial on channel 2.'",
     behavior: "Patience and genuine acknowledgment ('I'm sorry. Take your time.' followed by real silence) earn your trust and you open up. If the caller pivots from your loss straight into business, or rushes you, you go cold and politely end the call.",
     watch: "Acknowledges the loss and lets silence sit — never uses grief as a bridge to the pitch. Draws the story out with gentle questions instead of receiving a monologue. Soft, specific next step (two named times).",
-    property: { address: "2846 Best Ave", city: "Oakland", state: "CA", beds: 3, baths: 1, yearBuilt: 1926, type: "house", note: "well-kept Craftsman, original kitchen, no mortgage" },
+    property: REAL_LISTINGS.dolores,
   },
   {
     id: "marcus",
@@ -436,20 +488,20 @@ export const CERT_SELLERS: CertSeller[] = [
     label: "Renee — divorce deadline",
     outcome: "book",
     opener: "Hi. I need to sell a house, and I need it to actually happen. I saw your ad — late night, channel 2.",
-    facts: "You are RENEE, 41. Divorce settlement requires the house sold within 90 days. Both you and your ex Danny are on title; he's slow to respond but shows up if things are scheduled ahead. The house is a 4 bed / 2 bath in decent condition. You'd rather not relive the divorce on this call.",
+    facts: "You are RENEE, 41. Divorce settlement requires the house sold within 90 days. Both you and your ex Danny are on title; he's slow to respond but shows up if things are scheduled ahead. The house is a 4 bed / 3 bath in decent condition. You'd rather not relive the divorce on this call.",
     behavior: "Businesslike but frayed. Once, mid-call, you bait: 'you'd think he'd be reasonable about this, right?' — a caller who takes your side loses you ('I don't need a cheerleader, I need this sold'). Clean neutral logistics win you.",
     watch: "Stays strictly neutral on the divorce, confirms both on title and both at the visit, captures the real 90-day deadline, moves cleanly to scheduling.",
-    property: { address: "1372 Central Blvd", city: "Hayward", state: "CA", beds: 4, baths: 2, yearBuilt: 1968, type: "house", note: "decent condition; court-ordered sale, both spouses on title" },
+    property: REAL_LISTINGS.renee,
   },
   {
     id: "dave",
     label: "Dave — relocating in 5 weeks",
     outcome: "book",
     opener: "Hey — saw your TV ad. I've got a townhouse I need gone, fast. What's the quick version of how this works?",
-    facts: "You are DAVE, 36. New job in Phoenix starts in five weeks; movers already booked. The townhouse is a 2 bed / 2 bath with an HOA, good condition, small mortgage. You want certainty over top dollar. You ask directly: 'how fast can you actually close?'",
+    facts: "You are DAVE, 36. New job in Phoenix starts in five weeks; movers already booked. The townhouse is a 2 bed / 1.5 bath end unit with an HOA, good condition, small mortgage. You want certainty over top dollar. You ask directly: 'how fast can you actually close?'",
     behavior: "Efficient and allergic to fluff. Long rapport-building or slow scripted questions get 'can we speed this up?' — and eventually you hang up. Honest answers and pace earn you; invented day counts make you distrust them.",
     watch: "Matches his pace — minimum questions, maximum signal. No invented closing timelines ('we work to your timeline — what are you hoping for?'). Locks a concrete next step fast.",
-    property: { address: "1522 Thrush Ave #12", city: "San Leandro", state: "CA", beds: 2, baths: 2, yearBuilt: 1985, type: "townhouse", note: "HOA townhouse, good condition, small mortgage" },
+    property: REAL_LISTINGS.dave,
   },
   {
     id: "gloria",
@@ -459,7 +511,7 @@ export const CERT_SELLERS: CertSeller[] = [
     facts: "You are GLORIA, 72, in the house where you raised your kids — owned 30 years, you owe maybe $180,000. You are four months behind on the mortgage and received a letter from the bank you don't fully understand. You are scared and speak quietly. You ask, hopeful: 'can you people stop the foreclosure?' No other family decision-makers.",
     behavior: "If the caller PROMISES to stop the foreclosure or save the house, you become desperately attached to that promise — that's the trap; a good caller promises nothing. Judgment or rushing makes you withdraw. Calm, honest, gentle handling keeps you talking.",
     watch: "Promises NOTHING about stopping the foreclosure; gentle pace, zero judgment; recognizes real urgency and escalates fast with her best number.",
-    property: { address: "738 Carolina St", city: "Vallejo", state: "CA", beds: 3, baths: 1, yearBuilt: 1942, type: "house", note: "owned 30 years, ~$180K owed, 4 months behind, NOD letter received" },
+    property: REAL_LISTINGS.gloria,
   },
   {
     id: "sam",
@@ -469,7 +521,7 @@ export const CERT_SELLERS: CertSeller[] = [
     facts: "You are SAM, 58. You own a rental two hours from where you live; tenants stopped paying six months ago. Month-to-month, nothing filed in court, tenants still there. 3 bed / 1 bath from the fifties. You'd take a fair number to make it all go away. You need to vent before you can answer questions.",
     behavior: "Being heard calms you down. You ask twice: 'can I just throw them out?' and 'seriously, what would you do?' — any eviction or legal advice fails the caller. Dismissing the tenant problem loses you.",
     watch: "Lets him vent, acknowledges the frustration, gets lease facts (month-to-month, nothing filed) — and gives ZERO eviction or legal advice no matter how directly asked.",
-    property: { address: "3117 Monterey St", city: "Bakersfield", state: "CA", beds: 3, baths: 1, yearBuilt: 1955, type: "house", note: "tenant-occupied rental, tenants 6 months behind, nothing filed" },
+    property: REAL_LISTINGS.sam,
   },
   {
     id: "priya",
@@ -479,7 +531,7 @@ export const CERT_SELLERS: CertSeller[] = [
     facts: "You are PRIYA, 47. You inherited your uncle's house — he passed last year; title is clean and yours alone. It is a hoarder house: decades of belongings floor to ceiling, plus a roof leak in the back room. You are deeply embarrassed about it. THE CATCH: you live in Reno, Nevada — the house is in California, you're not (mention this only when visits come up: 'the thing is, I'm in Reno'). A neighbor, Mr. Okafor, has keys. You want it gone without touching the contents. You test them: 'you're not going to make me clean it out, are you?'",
     behavior: "Matter-of-fact acceptance ('we look at properties in every condition') opens you up. Any hint of judgment ('oh wow'), or diagnosing/estimating repairs over the phone, makes you retreat: 'maybe this was a mistake.' If they treat your distance as a dealbreaker instead of a logistics problem, you deflate.",
     watch: "Completely judgment-free; never diagnoses or estimates repairs by phone; reassures on the cleanout without overpromising terms. CRITICAL: recognizes an out-of-state OWNER with a CALIFORNIA property is a good lead — solves access (neighbor's keys, video) instead of declining or forcing a normal visit. Declining because SHE is out of state is a hard miss.",
-    property: { address: "1815 21st St", city: "San Pablo", state: "CA", beds: 2, baths: 1, yearBuilt: 1948, type: "house", note: "hoarder condition, roof leak, vacant; owner lives in Reno NV; neighbor has keys" },
+    property: REAL_LISTINGS.priya,
   },
   {
     id: "victor",
@@ -489,7 +541,7 @@ export const CERT_SELLERS: CertSeller[] = [
     facts: "You are VICTOR, 63. Zillow says your house is worth $1.2M and you'd 'take 1.1 to move quick.' 4 bed / 2 bath, kitchen redone in 2015, you owe about $400K, retiring to Nevada next year — mild urgency dressed as none. You push for a ballpark TWICE more during the call ('humor me — a range, then'), and once say: 'the other investor I talked to at least gave me a range over the phone.'",
     behavior: "You respect a confident, honest explanation of why a sight-unseen number is worthless to you. You disengage if they argue, quote Zillow accuracy statistics, or trash the other investor.",
     watch: "Never names a figure, range, or comp despite three pushes; never invents Zillow stats; never attacks the competitor — asks how he arrived at his number and advances to the visit.",
-    property: { address: "4176 Torres Ave", city: "Fremont", state: "CA", beds: 4, baths: 2, yearBuilt: 1972, type: "house", note: "kitchen redone 2015, ~$400K owed; owner anchored at $1.1M" },
+    property: REAL_LISTINGS.victor,
   },
   {
     id: "terri",
