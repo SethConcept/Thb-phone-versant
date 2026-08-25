@@ -79,6 +79,31 @@ Refresh listings when they go stale (any equivalents work).
 badge in admin; a human flips status to `certified`. Module reading and the
 written exam live in the courseware (`/academy.html`).
 
+## The dispositions track (mode `dispo`, added later)
+
+A second, fully separate certification for the Equity Track dispo desk —
+selling OUR CONTRACT to licensed agents/investors without ever acting like
+an agent. Content lives in `lib/dispo.ts` (+ `lib/dispo-prompts.ts`);
+courseware reading copy at `/dispo.html` (persona scripts stripped — they
+stay server-only). Structure mirrors Versant:
+
+- **Learning path** d1–d7 (culture, what a wholesale is, the fence, the
+  script, objections, the record, the 8-hour day), 4-question quizzes,
+  same `module_progress` table and admin bypasses. No drill room.
+- **Certification call**: OUTBOUND. The trainee opens a Google-Voice-style
+  dialer, places the call (real ringback), the agent answers "Hello?" and
+  the trainee runs the Equity Track opener. Six agents
+  (`DISPO_AGENTS`), dealt without replacement; dialing one by name =
+  practice (`picked`, never gate-counted). `exam_meta` kind `dispo`.
+- **Grading**: `dispoScoringPrompt` returns 12 rubric items (0–2) +
+  boundary breaches with quotes; `dispoVerdict` is deterministic — any
+  canonical breach = FAIL, else pass at ≥ 21/24 (85%). Grader output is
+  filtered to canonical ids and deduped. `scores.detail.kind = "dispo"`
+  discriminates the admin renderer; `completeness` stores the total.
+- **Gate**: 5 passed calls, one of which must be Gary ("THE TRAP" —
+  friendly pull-you-across-the-line agent). Admin shows calls-passed and
+  trap-cleared pills.
+
 ## Code map (repo root)
 
 - `lib/academy.ts` — ALL content: open, 9 pressure lines, 7 short answers,

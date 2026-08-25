@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { SELLER_BRAND } from "@/lib/academy";
+import { DISPO_MODULES } from "@/lib/dispo";
 import { pathState } from "@/lib/progress";
 
 // Learning path home: send the trainee to their first incomplete module.
@@ -13,7 +14,7 @@ export default async function LearnHome({ params }: { params: Promise<{ token: s
     .eq("interview_token", token)
     .single();
 
-  if (!trainee || trainee.mode !== "training")
+  if (!trainee || !["training", "dispo"].includes(trainee.mode))
     return (
       <div className="candidate-bg">
         <main className="card candidate-card fade-in">
@@ -23,11 +24,14 @@ export default async function LearnHome({ params }: { params: Promise<{ token: s
       </div>
     );
 
+  const isDispo = trainee.mode === "dispo";
   const { data: rows } = await db
     .from("module_progress")
     .select("module_id, quiz_score, quiz_total, quiz_passed, drill_passed")
     .eq("candidate_id", trainee.id);
 
-  const state = pathState(rows ?? []);
-  redirect(`/learn/${token}/${state.firstIncomplete ?? "m1"}`);
+  const state = isDispo
+    ? pathState(rows ?? [], DISPO_MODULES)
+    : pathState(rows ?? []);
+  redirect(`/learn/${token}/${state.firstIncomplete ?? (isDispo ? "d1" : "m1")}`);
 }

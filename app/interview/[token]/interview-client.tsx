@@ -11,6 +11,10 @@
 //              the AI. Auto-graded on hangup.
 //   drill    — the OPTIONAL drill room: coached practice, the coach gives
 //              spoken advice after each answer; never graded or counted
+//   dispo    — the dispositions dialer: same desk UI but OUTBOUND. The
+//              trainee places the call, hears ringback, the agent answers
+//              "Hello?" and the trainee runs the Equity Track opener.
+//              Auto-graded on hangup (12-item rubric, breaches = fail).
 //   sales    — practice call vs "John" with the script on screen
 //
 // Audio in:  mic -> AudioContext(16kHz) -> PCM16 -> sendRealtimeInput
@@ -35,7 +39,12 @@ type DeskSeller = { id: string; label: string; number: string };
 const SALES_CAP_MS = 8 * 60 * 1000;
 const TRAINING_CAP_MS = 12 * 60 * 1000;
 const DRILL_CAP_MS = 5 * 60 * 1000;
+const DISPO_CAP_MS = 8 * 60 * 1000;
 const MAX_SALES_ATTEMPTS = 3;
+
+// Client-safe branding for the dispo track (never import lib/dispo here —
+// it carries the agent persona scripts, which must not ship to the browser).
+const DISPO_BRAND_LABEL = "Equity Track";
 
 const END_MARKERS = ["TEST COMPLETE", "CALL COMPLETE", "DRILL COMPLETE"];
 
@@ -47,7 +56,7 @@ const STEP_OF: Record<Stage, number> = {
 // Module-level so React treats it as a stable component — defining it inside
 // InterviewClient caused a full remount (and fade-in restart) on every
 // mic-level tick, making the page invisible until the meter pinned.
-function Shell({ step, children }: { step: number; children: React.ReactNode }) {
+function Shell({ step, children, foot }: { step: number; children: React.ReactNode; foot?: string }) {
   return (
     <div className="candidate-bg">
       <main className="card candidate-card fade-in">
@@ -58,7 +67,7 @@ function Shell({ step, children }: { step: number; children: React.ReactNode }) 
         </div>
         {children}
         <p className="small muted" style={{ marginTop: 22, marginBottom: 0 }}>
-          {SELLER_BRAND} · Phone Academy
+          {foot ?? `${SELLER_BRAND} · Phone Academy`}
         </p>
       </main>
     </div>
@@ -123,7 +132,7 @@ export default function InterviewClient({
   token: string;
   candidateName: string;
   attemptsUsed?: number;
-  mode?: "training" | "sales" | "drill";
+  mode?: "training" | "sales" | "drill" | "dispo";
   script?: string;
   drillModule?: string;
   drillTitle?: string;
@@ -133,6 +142,9 @@ export default function InterviewClient({
 }) {
   const isTraining = mode === "training";
   const isDrill = mode === "drill";
+  const isDispo = mode === "dispo";
+  // both desk-based modes share the Google-Voice UI and the back-to-desk flow
+  const isDesk = isTraining || isDispo;
   const [stage, setStage] = useState<Stage>("consent");
   const [error, setError] = useState("");
   const [agentSpeaking, setAgentSpeaking] = useState(false);
@@ -153,6 +165,8 @@ export default function InterviewClient({
   const [callSec, setCallSec] = useState(0);
   const ringRef = useRef<{ ctx: AudioContext; timer: ReturnType<typeof setInterval> } | null>(null);
   const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // dispo: outbound ringback plays, then the call auto-connects
+  const outboundRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const transcriptRef = useRef<Turn[]>([]);
   const sessionRef = useRef<any>(null);
@@ -166,7 +180,11 @@ export default function InterviewClient({
   const failReasonRef = useRef<string>("");
   const flushTurnsRef = useRef<() => void>(() => {});
 
-  useEffect(() => () => { stopRing(); if (callTimerRef.current) clearInterval(callTimerRef.current); }, []);
+  useEffect(() => () => {
+    stopRing();
+    if (callTimerRef.current) clearInterval(callTimerRef.current);
+    if (outboundRef.current) clearTimeout(outboundRef.current);
+  }, []);
 
   // Consent accepted → open the mic and show a live level meter so the
   // trainee can SEE their voice registering before anything counts.
@@ -245,6 +263,16 @@ export default function InterviewClient({
     setDialError("");
     setStage("ringing");
     startRing();
+    // Dispo is outbound: the trainee placed the call, so after a few rings
+    // the agent picks up on their own — no answer button to press.
+    if (isDispo) {
+      if (outboundRef.current) clearTimeout(outboundRef.current);
+      outboundRef.current = setTimeout(() => {
+        outboundRef.current = null;
+        stopRing();
+        start();
+      }, 5500);
+    }
   }
 
   function dialSeller() {
@@ -257,7 +285,7 @@ export default function InterviewClient({
         (digits.length >= 4 && s.number.replace(/\D/g, "").endsWith(digits))
     );
     if (!match) {
-      setDialError("No seller matches that name or number.");
+      setDialError(isDispo ? "No agent matches that name or number." : "No seller matches that name or number.");
       return;
     }
     setDial("");
@@ -271,6 +299,7 @@ export default function InterviewClient({
 
   function declineCall() {
     stopRing();
+    if (outboundRef.current) { clearTimeout(outboundRef.current); outboundRef.current = null; }
     setPickedSeller(null);
     setStage("desk");
   }
@@ -303,7 +332,7 @@ export default function InterviewClient({
         body: JSON.stringify({
           token,
           ...(isDrill ? { drill: drillModule } : {}),
-          ...(isTraining && pickedSeller ? { persona: pickedSeller.id } : {}),
+          ...(isDesk && pickedSeller ? { persona: pickedSeller.id } : {}),
         }),
       });
       if (!res.ok) {
@@ -446,7 +475,13 @@ export default function InterviewClient({
       // Hard cap
       const capTimer = setTimeout(
         () => endSession(true),
-        isDrill ? (drillCapMs || DRILL_CAP_MS) : isTraining ? TRAINING_CAP_MS : SALES_CAP_MS
+        isDrill
+          ? (drillCapMs || DRILL_CAP_MS)
+          : isTraining
+            ? TRAINING_CAP_MS
+            : isDispo
+              ? DISPO_CAP_MS
+              : SALES_CAP_MS
       );
 
       // call duration ticker
@@ -517,15 +552,26 @@ export default function InterviewClient({
 
   if (stage === "consent")
     return (
-      <Shell step={step}>
+      <Shell step={step} foot={isDispo ? `${DISPO_BRAND_LABEL} · The Desk · Dispositions` : undefined}>
         <h1 style={{ fontSize: 24 }}>
           {isDrill
             ? `🎙 Voice drill: ${drillTitle}`
             : isTraining
               ? `${SELLER_BRAND} — Phone Certification Test`
-              : `${SELLER_BRAND} — Practice Call`}
+              : isDispo
+                ? `${DISPO_BRAND_LABEL} — Dispositions Certification`
+                : `${SELLER_BRAND} — Practice Call`}
         </h1>
-        {isDrill ? (
+        {isDispo ? (
+          <>
+            <p>
+              Hi {candidateName}! This is a certification call — <strong>you place one outbound call to a licensed agent</strong>, about five minutes. They answer, you run the opener: who you are, why you&apos;re calling, the position, and then you stop talking.
+            </p>
+            <p className="small muted" style={{ marginTop: 0 }}>
+              You won&apos;t know which agent you&apos;re getting — some are friendly, some test you. Graded automatically when you hang up: 12 items, and crossing a licensing boundary is an automatic fail. Certification takes 5 passed calls.
+            </p>
+          </>
+        ) : isDrill ? (
           <>
             <p>{drillIntro}</p>
             <p className="small muted">
@@ -552,7 +598,7 @@ export default function InterviewClient({
           </p>
         )}
         <p className="notice notice-amber">
-          <strong>This session is recorded</strong> (audio and transcript) and reviewed by the {SELLER_BRAND} team. By clicking below, you consent to the recording.
+          <strong>This session is recorded</strong> (audio and transcript) and reviewed by the {isDispo ? DISPO_BRAND_LABEL : SELLER_BRAND} team. By clicking below, you consent to the recording.
         </p>
         <p className="small muted">Find a quiet spot and use headphones.</p>
         <button className="btn btn-lg" onClick={beginMicCheck}>I consent — continue to mic check</button>
@@ -561,7 +607,7 @@ export default function InterviewClient({
 
   if (stage === "miccheck")
     return (
-      <Shell step={step}>
+      <Shell step={step} foot={isDispo ? `${DISPO_BRAND_LABEL} · The Desk · Dispositions` : undefined}>
         <h1 style={{ fontSize: 22 }}>Quick mic check</h1>
         <p className="notice notice-blue">
           🎧 <strong>Use headphones or earphones if you can</strong> — speakers can cause the AI to hear itself.
@@ -602,6 +648,11 @@ export default function InterviewClient({
             Next: your phone desk. When a call comes in, <strong>answer it and speak first</strong> — exactly like a real inbound call.
           </p>
         )}
+        {isDispo && (
+          <p className="small muted" style={{ margin: "8px 0" }}>
+            Next: your dialer. <strong>You place the call</strong> — when the agent picks up, run the opener. Name, company, the property, a few minutes to talk.
+          </p>
+        )}
         {isDrill && (
           <p className="small muted" style={{ margin: "8px 0" }}>
             The examiner starts the drill as soon as you&apos;re connected.
@@ -611,7 +662,7 @@ export default function InterviewClient({
           className="btn btn-lg"
           disabled={!micOk}
           onClick={() => {
-            if (isTraining) {
+            if (isDesk) {
               micCheckCleanupRef.current();
               setStage("desk");
             } else {
@@ -619,7 +670,7 @@ export default function InterviewClient({
             }
           }}
         >
-          {isDrill ? "🎙 Start the drill" : isTraining ? "☎️ Open my phone desk" : "📞 Call John"}
+          {isDrill ? "🎙 Start the drill" : isDispo ? "☎️ Open my dialer" : isTraining ? "☎️ Open my phone desk" : "📞 Call John"}
         </button>
       </Shell>
     );
@@ -638,7 +689,7 @@ export default function InterviewClient({
           <div className="gv2-search">
             <SearchIcon size={17} />
             <input
-              placeholder="Search sellers"
+              placeholder={isDispo ? "Search agents" : "Search sellers"}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -662,7 +713,7 @@ export default function InterviewClient({
                 <span className="gv2-ava" style={{ background: avaColor(x.id) }}>{initialOf(x.label)}</span>
                 <span className="gv2-rowmain">
                   <span className="gv2-rowname">{firstNameOf(x.label)}</span>
-                  <span className="gv2-rowsub"><span className="dir">↙</span> {situationOf(x.label)} · {x.number}</span>
+                  <span className="gv2-rowsub"><span className="dir">{isDispo ? "↗" : "↙"}</span> {situationOf(x.label)} · {x.number}</span>
                 </span>
                 <button
                   className="gv2-rowcall"
@@ -673,21 +724,30 @@ export default function InterviewClient({
               </div>
             ))}
             {visibleSellers.length === 0 && (
-              <p className="gv2-note" style={{ padding: "14px 16px" }}>No sellers match &quot;{search}&quot;.</p>
+              <p className="gv2-note" style={{ padding: "14px 16px" }}>No {isDispo ? "agents" : "sellers"} match &quot;{search}&quot;.</p>
             )}
           </div>
 
           <div className="gv2-center">
             <div className="gv2-hero">
               <h2>Hi {capFirst(firstNameOf(candidateName))}!</h2>
-              <p>Your line is open. Take the next call to work toward certification — 12 passed calls across 6 different sellers.</p>
-              <p style={{ marginTop: 8 }}>Calling a seller from the list is practice: graded, but it doesn&apos;t count.</p>
+              {isDispo ? (
+                <>
+                  <p>Your dialer is ready. Dial the next call to work toward certification — 5 passed calls, and every kind of agent has to be covered.</p>
+                  <p style={{ marginTop: 8 }}>Calling an agent from the list is practice: graded, but it doesn&apos;t count.</p>
+                </>
+              ) : (
+                <>
+                  <p>Your line is open. Take the next call to work toward certification — 12 passed calls across 6 different sellers.</p>
+                  <p style={{ marginTop: 8 }}>Calling a seller from the list is practice: graded, but it doesn&apos;t count.</p>
+                </>
+              )}
             </div>
           </div>
 
           <div className="gv2-dialpanel">
             <div className="gv2-callas">Call as</div>
-            <div className="gv2-callasnum">Twin Home Buyer · (510) 394-0100</div>
+            <div className="gv2-callasnum">{isDispo ? `${DISPO_BRAND_LABEL} · (510) 394-0200` : "Twin Home Buyer · (510) 394-0100"}</div>
 
             <div className="gv2-dialrow">
               <input
@@ -704,8 +764,8 @@ export default function InterviewClient({
             <button className="gv2-sug" onClick={() => incomingCall(null)}>
               <span className="gv2-ava"><PhoneIcon size={17} /></span>
               <span>
-                <span className="gv2-sugname" style={{ display: "block" }}>Take the next call</span>
-                <span className="gv2-sugsub">Random seller · counts toward certification</span>
+                <span className="gv2-sugname" style={{ display: "block" }}>{isDispo ? "Dial the next call" : "Take the next call"}</span>
+                <span className="gv2-sugsub">{isDispo ? "Next agent on your list · counts toward certification" : "Random seller · counts toward certification"}</span>
               </span>
             </button>
 
@@ -736,16 +796,23 @@ export default function InterviewClient({
               >
                 {pickedSeller ? initialOf(pickedSeller.label) : "?"}
               </div>
-              <h2>{pickedSeller ? firstNameOf(pickedSeller.label) : "Unknown caller"}</h2>
-              <p className="sub">{pickedSeller ? pickedSeller.number : "No caller ID"} · Incoming call…</p>
+              <h2>{pickedSeller ? firstNameOf(pickedSeller.label) : isDispo ? "Next agent" : "Unknown caller"}</h2>
+              <p className="sub">
+                {isDispo
+                  ? `${pickedSeller ? pickedSeller.number : "Dialing"} · Calling…`
+                  : `${pickedSeller ? pickedSeller.number : "No caller ID"} · Incoming call…`}
+              </p>
               <div className="gv2-actions">
-                <button className="gv2-round gv2-decline" onClick={declineCall} title="Decline">
+                <button className="gv2-round gv2-decline" onClick={declineCall} title={isDispo ? "Cancel" : "Decline"}>
                   <PhoneIcon size={22} style={{ transform: "rotate(135deg)" }} />
                 </button>
-                <button className="gv2-round gv2-answer" onClick={answerCall} title="Answer">
-                  <PhoneIcon size={22} />
-                </button>
+                {!isDispo && (
+                  <button className="gv2-round gv2-answer" onClick={answerCall} title="Answer">
+                    <PhoneIcon size={22} />
+                  </button>
+                )}
               </div>
+              {isDispo && <p className="gv2-note" style={{ marginTop: 10 }}>Ringing — they&apos;ll pick up in a moment. Be ready to speak.</p>}
             </div>
           </div>
         )}
@@ -755,14 +822,14 @@ export default function InterviewClient({
 
   if (stage === "connecting")
     return (
-      <Shell step={step}>
-        <h1 style={{ fontSize: 22 }}>{mode === "sales" ? "Ringing John…" : "Connecting…"}</h1>
+      <Shell step={step} foot={isDispo ? `${DISPO_BRAND_LABEL} · The Desk · Dispositions` : undefined}>
+        <h1 style={{ fontSize: 22 }}>{mode === "sales" ? "Ringing John…" : isDispo ? "Connecting the call…" : "Connecting…"}</h1>
         <div className="spinner" />
-        <p className="muted">{mode === "sales" ? "He usually picks up fast." : isTraining ? "Picking up the line…" : "The drill starts as soon as they pick up."}</p>
+        <p className="muted">{mode === "sales" ? "He usually picks up fast." : isDispo ? "They're picking up — you speak after their hello." : isTraining ? "Picking up the line…" : "The drill starts as soon as they pick up."}</p>
       </Shell>
     );
 
-  if (stage === "live" && isTraining) {
+  if (stage === "live" && isDesk) {
     const liveColor = pickedSeller
       ? AVA_COLORS[sellers.findIndex((x) => x.id === pickedSeller.id) % AVA_COLORS.length]
       : "#616161";
@@ -779,8 +846,14 @@ export default function InterviewClient({
             <div className={`gv2-ava gv2-bigava ${agentSpeaking ? "speaking-pulse" : ""}`} style={{ background: liveColor }}>
               {pickedSeller ? initialOf(pickedSeller.label) : "?"}
             </div>
-            <h2>{pickedSeller ? firstNameOf(pickedSeller.label) : "Unknown caller"}</h2>
-            <p className="sub">{pickedSeller ? `${pickedSeller.number} · practice call` : "No caller ID"}</p>
+            <h2>{pickedSeller ? firstNameOf(pickedSeller.label) : isDispo ? "On the line" : "Unknown caller"}</h2>
+            <p className="sub">
+              {pickedSeller
+                ? `${pickedSeller.number} · practice call`
+                : isDispo
+                  ? "Outbound · certification call"
+                  : "No caller ID"}
+            </p>
             <p className="gv2-timer">{mmss}</p>
             <button
               className="gv2-round gv2-end"
@@ -801,7 +874,7 @@ export default function InterviewClient({
 
   if (stage === "live" && isDrill)
     return (
-      <Shell step={step}>
+      <Shell step={step} foot={isDispo ? `${DISPO_BRAND_LABEL} · The Desk · Dispositions` : undefined}>
         <div className={`orb ${agentSpeaking ? "orb-speaking" : "orb-listening"}`}>
           {agentSpeaking ? "🗣️" : "🎙️"}
         </div>
@@ -861,9 +934,9 @@ export default function InterviewClient({
 
   if (stage === "uploading")
     return (
-      <Shell step={step}>
+      <Shell step={step} foot={isDispo ? `${DISPO_BRAND_LABEL} · The Desk · Dispositions` : undefined}>
         <h1 style={{ fontSize: 22 }}>
-          {isDrill ? "Wrapping up your drill…" : isTraining ? "Grading your call…" : "Saving your call…"}
+          {isDrill ? "Wrapping up your drill…" : isDesk ? "Grading your call…" : "Saving your call…"}
         </h1>
         <div className="spinner" />
         <p className="muted">Don&apos;t close this tab.</p>
@@ -874,19 +947,19 @@ export default function InterviewClient({
     // session died before any conversation happened — surface the reason
     if (failReasonRef.current && transcriptRef.current.length === 0)
       return (
-        <Shell step={step}>
+        <Shell step={step} foot={isDispo ? `${DISPO_BRAND_LABEL} · The Desk · Dispositions` : undefined}>
           <h1>Connection problem</h1>
           <p>The session could not start. Please share this with the {SELLER_BRAND} team:</p>
           <p className="notice notice-gray small" style={{ color: "var(--red)", wordBreak: "break-all" }}>
             {failReasonRef.current}
           </p>
-          {isTraining && <button className="btn btn-secondary" onClick={backToDesk}>Back to the phones</button>}
+          {isDesk && <button className="btn btn-secondary" onClick={backToDesk}>Back to the phones</button>}
         </Shell>
       );
 
     if (isDrill) {
       return (
-        <Shell step={step}>
+        <Shell step={step} foot={isDispo ? `${DISPO_BRAND_LABEL} · The Desk · Dispositions` : undefined}>
           <h1>🎙 Drill done</h1>
           <p className="small muted">
             The coach&apos;s feedback was in the call — nothing is scored or counted here. Run another whenever you like.
@@ -900,13 +973,13 @@ export default function InterviewClient({
       );
     }
 
-    if (isTraining) {
+    if (isDesk) {
       const r = autoResult;
       return (
-        <Shell step={step}>
+        <Shell step={step} foot={isDispo ? `${DISPO_BRAND_LABEL} · The Desk · Dispositions` : undefined}>
           {r?.graded ? (
             <>
-              <h1>{r.pass ? "✅ Call passed!" : "Not this one — take another call"}</h1>
+              <h1>{r.pass ? "✅ Call passed!" : isDispo ? "Not this one — dial another call" : "Not this one — take another call"}</h1>
               {r.who && (
                 <p className="small muted" style={{ marginTop: 0 }}>That was: <strong>{r.who}</strong></p>
               )}
@@ -916,7 +989,11 @@ export default function InterviewClient({
               </p>
               {!r.pass && r.reason && <p className="small" style={{ color: "var(--red)" }}>{r.reason}</p>}
               {r.pass && !r.picked && (
-                <p className="small muted">This one counts toward your certification — 12 passed calls across 6 different sellers.</p>
+                <p className="small muted">
+                  {isDispo
+                    ? "This one counts toward your certification — 5 passed calls, and one of them has to be the agent who tries to pull you across the line."
+                    : "This one counts toward your certification — 12 passed calls across 6 different sellers."}
+                </p>
               )}
               {r.coaching && <p className="small muted">Coach&apos;s note: {r.coaching}</p>}
               <div className="row" style={{ justifyContent: "center" }}>
@@ -941,7 +1018,7 @@ export default function InterviewClient({
     const attemptsAfterThis = attemptsUsed + 1;
     const salesRetakesLeft = MAX_SALES_ATTEMPTS - attemptsAfterThis;
     return (
-      <Shell step={step}>
+      <Shell step={step} foot={isDispo ? `${DISPO_BRAND_LABEL} · The Desk · Dispositions` : undefined}>
         <h1>✅ All done, {candidateName}!</h1>
         <p>Your practice call was submitted. The {SELLER_BRAND} team will review it and get back to you.</p>
         {salesRetakesLeft > 0 && (
@@ -959,7 +1036,7 @@ export default function InterviewClient({
   }
 
   return (
-    <Shell step={step}>
+    <Shell step={step} foot={isDispo ? `${DISPO_BRAND_LABEL} · The Desk · Dispositions` : undefined}>
       <h1>Something went wrong</h1>
       <p style={{ color: "var(--red)" }}>{error}</p>
       <p>Please try the link again, or contact the {SELLER_BRAND} team.</p>

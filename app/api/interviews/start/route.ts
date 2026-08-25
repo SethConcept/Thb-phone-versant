@@ -7,6 +7,8 @@ import { versantSystemPrompt } from "@/lib/versant-prompts";
 import { drawExam, currentCycleSeen } from "@/lib/academy";
 import { drawPractice, PRACTICE_MODES } from "@/lib/drills";
 import { drillSystemPrompt } from "@/lib/drill-prompts";
+import { drawDispoCall, currentDispoCycleSeen, DISPO_MODULES } from "@/lib/dispo";
+import { dispoSystemPrompt } from "@/lib/dispo-prompts";
 import { pathState } from "@/lib/progress";
 import { isAdminPreview } from "@/lib/admin-preview";
 
@@ -19,6 +21,8 @@ import { isAdminPreview } from "@/lib/admin-preview";
 //                       never graded; drill = 'one' | 'three')
 //   training          — a certification call (requires all module quizzes,
 //                       unless the trainee has the skip_modules override)
+//   dispo             — an outbound dispositions call to one of the six
+//                       agents (requires the d1–d7 quizzes; same overrides)
 //   sales             — practice call vs "John" (max 3 attempts, easy/hard)
 export async function POST(req: Request) {
   const { token, drill, persona } = await req.json().catch(() => ({}));
@@ -34,9 +38,11 @@ export async function POST(req: Request) {
   if (!candidate) return NextResponse.json({ error: "Invalid link" }, { status: 404 });
 
   const isTraining = candidate.mode === "training";
+  const isDispo = candidate.mode === "dispo";
   const isDrill = isTraining && typeof drill === "string" && drill.length > 0;
 
-  if (!isTraining) {
+  // Training/dispo links never expire; the sales-practice caps stay.
+  if (!isTraining && !isDispo) {
     if (candidate.token_expires_at && new Date(candidate.token_expires_at) < new Date())
       return NextResponse.json({ error: "This link has expired" }, { status: 410 });
     if (["hired", "declined"].includes(candidate.status))
@@ -51,7 +57,7 @@ export async function POST(req: Request) {
     .select("*", { count: "exact", head: true })
     .eq("candidate_id", candidate.id)
     .eq("completed", true);
-  if (!isTraining && (attemptsUsed ?? 0) >= MAX_ATTEMPTS)
+  if (!isTraining && !isDispo && (attemptsUsed ?? 0) >= MAX_ATTEMPTS)
     return NextResponse.json({ error: "All attempts have been used" }, { status: 409 });
 
   // Learning-path gates (admin preview cookie bypasses them)
@@ -93,6 +99,35 @@ export async function POST(req: Request) {
       currentCycleSeen(personaHistory),
       typeof persona === "string" && persona ? persona : undefined
     );
+  } else if (isDispo) {
+    if (!candidate.skip_modules && !preview) {
+      const { data: rows } = await db
+        .from("module_progress")
+        .select("module_id, quiz_score, quiz_total, quiz_passed, drill_passed")
+        .eq("candidate_id", candidate.id);
+      const state = pathState(rows ?? [], DISPO_MODULES);
+      if (!state.allComplete)
+        return NextResponse.json(
+          { error: "Finish all modules in the learning path to unlock certification calls" },
+          { status: 409 }
+        );
+    }
+    // Deal the agent without replacement (first 6 calls cover all 6 agents);
+    // dialing a specific agent by name is a practice call that never counts.
+    const { data: past } = await db
+      .from("interviews")
+      .select("exam_meta, started_at")
+      .eq("candidate_id", candidate.id)
+      .not("exam_meta", "is", null)
+      .order("started_at", { ascending: true });
+    const agentHistory = (past ?? [])
+      .map((r: any) => r.exam_meta)
+      .filter((m: any) => m && m.kind === "dispo" && m.agent && !m.picked)
+      .map((m: any) => m.agent as string);
+    examMeta = drawDispoCall(
+      currentDispoCycleSeen(agentHistory),
+      typeof persona === "string" && persona ? persona : undefined
+    );
   }
 
   const { data: interview, error } = await db
@@ -129,9 +164,11 @@ export async function POST(req: Request) {
       ? drillSystemPrompt(candidate.full_name, examMeta)
       : isTraining
         ? versantSystemPrompt(candidate.full_name, examMeta)
-        : johnSystemPrompt(candidate.difficulty === "hard" ? "hard" : "easy"),
+        : isDispo
+          ? dispoSystemPrompt(candidate.full_name, examMeta)
+          : johnSystemPrompt(candidate.difficulty === "hard" ? "hard" : "easy"),
     mode: isDrill ? "drill" : candidate.mode || "sales",
     attempt: (attemptsUsed ?? 0) + 1,
-    maxAttempts: isTraining ? null : MAX_ATTEMPTS,
+    maxAttempts: isTraining || isDispo ? null : MAX_ATTEMPTS,
   });
 }

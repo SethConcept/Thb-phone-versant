@@ -47,13 +47,31 @@ certification test, plus a sales practice mode and the courseware:
    **Certification gate** (tracked per trainee in admin): 12 passed calls
    across at least 6 different seller personas.
 
-3. **📞 Sales practice call** — the AI plays "John", a homeowner lead; the
+3. **🏷 Dispositions certification** (mode `dispo`) — the Equity Track
+   dispo track, fully separate content: a 7-module learning path (what a
+   wholesale is, the two-numbers rule, the fence, the script, objections,
+   the record, the 8-hour day) with the same quiz gating, then
+   **outbound** certification calls. The trainee opens a dialer, places
+   the call, hears real ringback, and one of **six Bay Area agents**
+   answers "Hello?": Mike (busy), Sandra (hates wholesalers), Danielle
+   (chatty, hides her buy box), Tom (hard no), Priya (grills on numbers),
+   and Gary — THE TRAP, who warmly tries to pull the rep across the
+   licensing line (ballpark a list price, gossip about the seller, get
+   paid directly, "represent my buyer"). Agents deal without replacement;
+   dialing one by name is ungraded-toward-the-gate practice. Grading:
+   12-item rubric (0–2 each, pass ≥ 21/24) and **any licensing-boundary
+   breach is an automatic FAIL** with the rep's words quoted back —
+   claiming to be an agent, setting a list price, negotiating, inventing
+   numbers, discussing the seller, off-the-books pay, accepting an offer.
+   **Gate: 5 passed calls, one of which must be THE TRAP.** Courseware at
+   `/dispo.html`.
+
+4. **📞 Sales practice call** — the AI plays "John", a homeowner lead; the
    trainee runs the outbound follow-up script. Easy/hard difficulty,
    engagement-meter behavior, AI-scored (max 3 attempts per link).
 
-4. **📖 Phone Academy courseware** — the full study course (8 modules,
-   banned lines, S·P·C·T·A, desk card, self-study drills and written exam)
-   served at `/academy.html`.
+5. **📖 Courseware** — the Phone Academy study course at `/academy.html`
+   and the Dispositions Training course at `/dispo.html`.
 
 **Stack:** Next.js · Gemini Live API · Supabase · Vercel.
 

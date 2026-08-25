@@ -14,6 +14,14 @@ import {
 } from "@/lib/academy";
 import { MODEL_ITEMS, ENDING_ITEMS } from "@/lib/drills";
 import { LEARN_MODULES } from "@/lib/modules";
+import {
+  DISPO_MODULES,
+  DISPO_AGENTS,
+  DISPO_RUBRIC,
+  DISPO_BREACHES,
+  DISPO_MAX_SCORE,
+  DISPO_GATE,
+} from "@/lib/dispo";
 import { pathState, type ModuleProgressRow } from "@/lib/progress";
 
 const STATUSES = ["invited", "interviewed", "scored", "certified", "passed", "failed"];
@@ -65,6 +73,13 @@ const personaLabel = (id?: string) =>
 const hardFailLabel = (id: string) =>
   HARD_FAILS.find((x) => x.id === id)?.label ?? id;
 
+const dispoAgentLabel = (id?: string) =>
+  DISPO_AGENTS.find((a) => a.id === id)?.label ?? id ?? "—";
+const dispoRubricName = (id: string) =>
+  DISPO_RUBRIC.find((r) => r.id === id)?.name ?? id;
+const dispoBreachDesc = (id: string) =>
+  DISPO_BREACHES.find((b) => b.id === id)?.desc ?? id;
+
 // Latest score row of an attempt (rescores supersede earlier rows)
 function latestScore(iv: any) {
   const arr = (iv.scores ?? [])
@@ -85,6 +100,7 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
   if (!trainee) return <main>Trainee not found.</main>;
 
   const isTraining = trainee.mode === "training";
+  const isDispo = trainee.mode === "dispo";
 
   const { data: interviews } = await supabase
     .from("interviews")
@@ -96,7 +112,8 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
     .from("module_progress")
     .select("module_id, quiz_score, quiz_total, quiz_passed, drill_passed")
     .eq("candidate_id", id);
-  const path = pathState((progressRows ?? []) as ModuleProgressRow[]);
+  const modules = isDispo ? DISPO_MODULES : LEARN_MODULES;
+  const path = pathState((progressRows ?? []) as ModuleProgressRow[], modules);
 
   // Signed URL for audio playback (private bucket)
   const admin = supabaseAdmin();
@@ -120,6 +137,16 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
   );
   const gateMet = passedTests.length >= GATE_PASSES && personasPassed.size >= GATE_TYPES;
 
+  // Dispo gate (from the courseware): 5 passed calls, one of which must be
+  // Gary — THE TRAP, the agent who tries to pull the rep across the line.
+  const dispoPasses = gateAttempts.filter(
+    (iv) => (iv.exam_meta as any)?.kind === "dispo" && latestScore(iv)?.verdict === "PASS"
+  );
+  const trapCleared = dispoPasses.some(
+    (iv) => (iv.exam_meta as any)?.agent === DISPO_GATE.trapId
+  );
+  const dispoGateMet = dispoPasses.length >= DISPO_GATE.passesNeeded && trapCleared;
+
   return (
     <main className="fade-in">
       <Link href="/admin" className="small">← All trainees</Link>
@@ -127,20 +154,22 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
       <div className="card" style={{ marginTop: 12, marginBottom: 18 }}>
         <div className="row" style={{ justifyContent: "space-between" }}>
           <h1 style={{ fontSize: 22, margin: 0 }}>{trainee.full_name}</h1>
-          <span className={`pill ${isTraining ? "pill-gray" : "pill-blue"}`}>
+          <span className={`pill ${isTraining || isDispo ? "pill-gray" : "pill-blue"}`}>
             {isTraining
               ? "🎧 Versant certification"
-              : `📞 Sales practice · ${trainee.difficulty === "hard" ? "Hard" : "Easy"} John`}
+              : isDispo
+                ? "🏷 Dispositions certification"
+                : `📞 Sales practice · ${trainee.difficulty === "hard" ? "Hard" : "Easy"} John`}
           </span>
         </div>
         <p className="muted" style={{ marginTop: 4 }}>
           {trainee.email || "no email"} · {trainee.phone || "no phone"}
         </p>
 
-        {isTraining && (
+        {(isTraining || isDispo) && (
           <>
             <div className="row" style={{ gap: 6, margin: "8px 0", flexWrap: "wrap" }}>
-              {LEARN_MODULES.map((m) => {
+              {modules.map((m) => {
                 const row = path.byModule[m.id];
                 const complete = path.moduleComplete(m.id);
                 const started = !!row;
@@ -150,25 +179,39 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
                     className={`pill ${complete ? "pill-green" : started ? "pill-amber" : "pill-gray"}`}
                     title={`${m.title} — quiz ${row?.quiz_passed ? "✓" : row?.quiz_score != null ? `${row.quiz_score}/${row.quiz_total}` : "—"}`}
                   >
-                    {complete ? "✓" : ""} M{m.num}
+                    {complete ? "✓" : ""} {isDispo ? "D" : "M"}{m.num}
                   </span>
                 );
               })}
               <span className="pill pill-gray">
-                {LEARN_MODULES.filter((m) => path.moduleComplete(m.id)).length}/{LEARN_MODULES.length} modules
+                {modules.filter((m) => path.moduleComplete(m.id)).length}/{modules.length} modules
               </span>
             </div>
-            <div className="row" style={{ gap: 10, margin: "8px 0" }}>
-              <span className={`pill ${passedTests.length >= GATE_PASSES ? "pill-green" : "pill-gray"}`}>
-                Tests passed: {passedTests.length} / {GATE_PASSES}
-              </span>
-              <span className={`pill ${personasPassed.size >= GATE_TYPES ? "pill-green" : "pill-gray"}`}>
-                Different sellers passed: {personasPassed.size} / {GATE_TYPES}
-              </span>
-              <span className={`pill ${gateMet ? "pill-green" : "pill-amber"}`}>
-                {gateMet ? "✓ Gate met — ready to certify" : "In training"}
-              </span>
-            </div>
+            {isDispo ? (
+              <div className="row" style={{ gap: 10, margin: "8px 0" }}>
+                <span className={`pill ${dispoPasses.length >= DISPO_GATE.passesNeeded ? "pill-green" : "pill-gray"}`}>
+                  Calls passed: {dispoPasses.length} / {DISPO_GATE.passesNeeded}
+                </span>
+                <span className={`pill ${trapCleared ? "pill-green" : "pill-gray"}`}>
+                  {trapCleared ? "✓ THE TRAP cleared" : "THE TRAP not cleared yet"}
+                </span>
+                <span className={`pill ${dispoGateMet ? "pill-green" : "pill-amber"}`}>
+                  {dispoGateMet ? "✓ Gate met — ready to certify" : "In training"}
+                </span>
+              </div>
+            ) : (
+              <div className="row" style={{ gap: 10, margin: "8px 0" }}>
+                <span className={`pill ${passedTests.length >= GATE_PASSES ? "pill-green" : "pill-gray"}`}>
+                  Tests passed: {passedTests.length} / {GATE_PASSES}
+                </span>
+                <span className={`pill ${personasPassed.size >= GATE_TYPES ? "pill-green" : "pill-gray"}`}>
+                  Different sellers passed: {personasPassed.size} / {GATE_TYPES}
+                </span>
+                <span className={`pill ${gateMet ? "pill-green" : "pill-amber"}`}>
+                  {gateMet ? "✓ Gate met — ready to certify" : "In training"}
+                </span>
+              </div>
+            )}
           </>
         )}
 
@@ -183,7 +226,7 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
             </select>
             <button className="btn btn-secondary">Save</button>
           </form>
-          {isTraining && (
+          {(isTraining || isDispo) && (
             <form action={toggleSkip} className="row">
               <input type="hidden" name="id" value={trainee.id} />
               <label className="small muted" style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -209,10 +252,16 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
             <h2 style={{ fontSize: 16, margin: 0 }}>
               {isDrillAttempt
                 ? "🎙 Drill room (coached practice — not graded)"
-                : `${isTraining ? (draw?.picked ? "📞 Practice call" : "🏁 Certification call") : "Attempt"} ${withAudio.length - idx}`}
+                : `${isTraining || isDispo ? (draw?.picked ? "📞 Practice call" : "🏁 Certification call") : "Attempt"} ${withAudio.length - idx}`}
               {!isDrillAttempt && isTraining && draw?.persona && (
                 <span className="pill pill-gray" style={{ marginLeft: 8, fontWeight: 400 }}>
                   Seller: {personaLabel(draw.persona)}
+                </span>
+              )}
+              {!isDrillAttempt && isDispo && draw?.agent && (
+                <span className="pill pill-gray" style={{ marginLeft: 8, fontWeight: 400 }}>
+                  Agent: {dispoAgentLabel(draw.agent)}
+                  {draw.agent === DISPO_GATE.trapId && " · THE TRAP"}
                 </span>
               )}
               {isDrillAttempt && draw?.persona && (
@@ -290,6 +339,39 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
                       </div>
                     ))}
                     {d.persona_note && <div className="small muted" style={{ marginLeft: 12 }}>{d.persona_note}</div>}
+                  </>
+                ) : d && d.kind === "dispo" ? (
+                  <>
+                    <strong>{s.verdict}</strong> ({s.scored_by})
+                    {s.knockout_reason && (
+                      <span style={{ marginLeft: 8, color: "var(--red)" }}>— {s.knockout_reason}</span>
+                    )}
+                    {(d.breaches ?? []).length > 0 && (
+                      <div className="notice notice-gray small" style={{ margin: "8px 0", color: "var(--red)" }}>
+                        {(d.breaches ?? []).map((b: any, i: number) => (
+                          <div key={i}>
+                            🚫 <strong>{dispoBreachDesc(b.id)}</strong>
+                            {b.quote && <> — “{b.quote}”</>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="small" style={{ marginTop: 6 }}>
+                      <strong>Rubric ({dispoAgentLabel(draw?.agent)}):</strong>{" "}
+                      {s.completeness ?? "—"}/{DISPO_MAX_SCORE} — pass needs 21 and zero breaches
+                      {(d.items ?? []).map((item: any, i: number) => (
+                        <div key={i} style={{ marginLeft: 12 }}>
+                          {Number(item.score) === 2 ? "✓" : Number(item.score) === 1 ? "◐" : "✗"}{" "}
+                          {dispoRubricName(item.id)} — {item.score}/2
+                          {item.note && <span className="muted"> — {item.note}</span>}
+                        </div>
+                      ))}
+                    </div>
+                    {(d.buybox_captured ?? []).length > 0 && (
+                      <div className="small" style={{ marginTop: 6 }}>
+                        <strong>Buy box captured:</strong> {(d.buybox_captured ?? []).join(" · ")}
+                      </div>
+                    )}
                   </>
                 ) : d ? (
                   <>

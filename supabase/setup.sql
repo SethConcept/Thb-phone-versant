@@ -11,7 +11,8 @@ create table candidates (
   status text not null default 'invited',
     -- invited | interviewed | scored | certified | passed | failed
   mode text not null default 'training',
-    -- 'training' (Versant certification) | 'sales' (John practice call)
+    -- 'training' (Versant certification) | 'dispo' (dispositions
+    -- certification) | 'sales' (John practice call)
   difficulty text not null default 'easy',
     -- 'easy' | 'hard' (sales mode only)
   interview_token uuid unique default gen_random_uuid(),
@@ -33,7 +34,8 @@ create table interviews (
   audio_url text,            -- storage path in interview-audio bucket
   completed boolean default false,
   candidate_notes text,      -- trainee's own prep notes (sales mode)
-  exam_meta jsonb            -- training draw: {kind:'versant', partB, partC, persona}
+  exam_meta jsonb            -- the draw: {kind:'cert',persona,items} |
+                             -- {kind:'drill',items} | {kind:'dispo',agent}
 );
 
 create table scores (

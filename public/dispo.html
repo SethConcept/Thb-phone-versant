@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THE DESK — Dispositions Training | Equity Track</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --yellow:#FFDD00; --red:#E4032E; --ink:#0A0A0A; --deep:#1A0304; --paper:#FFF8E1;
+  --display:'Archivo Black','Arial Black',system-ui,sans-serif;
+  --body:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--yellow);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.hazard{height:14px;background:repeating-linear-gradient(45deg,var(--ink) 0 18px,var(--yellow) 18px 36px)}
+.hazard-red{height:14px;background:repeating-linear-gradient(45deg,var(--red) 0 18px,var(--yellow) 18px 36px)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+
+header.hero{background:var(--yellow);padding:44px 0 30px;border-bottom:6px solid var(--ink)}
+.eyebrow{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;background:var(--ink);color:var(--yellow);display:inline-block;padding:5px 11px}
+h1{font-family:var(--display);font-size:clamp(2.5rem,8.4vw,6rem);line-height:.86;letter-spacing:-.02em;text-transform:uppercase;margin:18px 0 0}
+h1 .flare{color:var(--red);-webkit-text-stroke:2px var(--ink)}
+.hero-sub{font-size:clamp(1rem,2.2vw,1.3rem);font-weight:600;max-width:58ch;margin-top:18px;border-left:8px solid var(--red);padding-left:16px}
+.hero-meta{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.1em;margin-top:22px;display:flex;flex-wrap:wrap;gap:8px}
+.hero-meta span{background:var(--ink);color:var(--yellow);padding:5px 10px}
+.hero-meta span.hot{background:var(--red);color:#fff}
+
+nav{position:sticky;top:0;z-index:60;background:var(--ink);border-bottom:5px solid var(--red)}
+.navrow{display:flex;overflow-x:auto;max-width:1080px;margin:0 auto;scrollbar-width:none}
+.navrow::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;background:none;border:0;cursor:pointer;font-family:var(--mono);font-size:11.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8d8d8d;padding:15px 14px;border-bottom:5px solid transparent;margin-bottom:-5px;transition:color .12s}
+nav button:hover{color:var(--yellow)}
+nav button[aria-selected="true"]{color:var(--yellow);border-bottom-color:var(--yellow)}
+nav button:focus-visible{outline:3px solid var(--yellow);outline-offset:-3px}
+
+main{background:var(--paper);border-bottom:6px solid var(--ink)}
+.panel{display:none;padding:44px 0 66px}
+.panel.on{display:block}
+.mod{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--red);margin-bottom:8px}
+h2{font-family:var(--display);text-transform:uppercase;line-height:.94;font-size:clamp(1.9rem,5vw,3.2rem);letter-spacing:-.015em;margin-bottom:8px}
+h3{font-family:var(--display);text-transform:uppercase;font-size:1.16rem;margin:34px 0 12px;letter-spacing:-.01em}
+h3:first-of-type{margin-top:26px}
+p{max-width:70ch;margin-bottom:14px}
+.lede{font-size:1.15rem;font-weight:600;max-width:64ch;margin-bottom:22px}
+ul,ol{margin:0 0 16px 22px;max-width:70ch}
+li{margin-bottom:8px}
+em{font-style:italic}
+
+.say{background:var(--ink);color:var(--paper);padding:22px 24px;margin:20px 0;border-left:12px solid var(--yellow)}
+.say .who{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--yellow);margin-bottom:10px}
+.say p{font-family:var(--mono);font-size:15.5px;line-height:1.62;color:var(--paper);margin:0 0 12px;max-width:64ch}
+.say p:last-child{margin-bottom:0}
+.say .beat{color:var(--red);font-weight:600;letter-spacing:.06em;font-size:12.5px;text-transform:uppercase}
+.say .them{color:var(--yellow);font-weight:600}
+
+.stop{background:var(--red);color:#fff;padding:22px 24px;margin:22px 0;border-left:12px solid var(--ink)}
+.stop h4{font-family:var(--display);text-transform:uppercase;font-size:1.02rem;margin-bottom:10px}
+.stop p,.stop li{color:#fff;max-width:66ch}
+.stop ul,.stop ol{margin-bottom:0}
+
+.card{background:#fff;border:3px solid var(--ink);padding:20px 22px;margin-bottom:16px}
+.card h4{font-family:var(--display);text-transform:uppercase;font-size:.98rem;margin-bottom:8px}
+.card p:last-child{margin-bottom:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin:20px 0}
+
+.value{background:#fff;border:3px solid var(--ink);border-top:14px solid var(--red);padding:22px}
+.value .num{font-family:var(--display);font-size:2.2rem;color:var(--red);line-height:1}
+.value h4{font-family:var(--display);text-transform:uppercase;font-size:1.02rem;margin:8px 0 8px}
+
+table{width:100%;border-collapse:collapse;margin:20px 0;background:#fff;border:3px solid var(--ink);font-size:14.5px}
+th{background:var(--ink);color:var(--yellow);font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;text-align:left;padding:10px 12px}
+td{padding:10px 12px;border-top:2px solid var(--ink);vertical-align:top}
+td.t{font-family:var(--mono);font-weight:600;background:var(--yellow)}
+td.no{background:var(--red);color:#fff;font-family:var(--mono);font-weight:600}
+td.yes{background:var(--ink);color:var(--yellow);font-family:var(--mono);font-weight:600}
+
+.dial{background:var(--ink);border:4px solid var(--red);margin:22px 0}
+.dialhead{background:var(--red);color:#fff;padding:12px 18px;font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:600;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.log{height:400px;overflow-y:auto;padding:18px;background:var(--deep)}
+.turn{margin-bottom:16px;max-width:88%}
+.turn .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;margin-bottom:5px}
+.turn .txt{padding:11px 14px;font-size:15px;line-height:1.55;white-space:pre-wrap}
+.turn.them .lbl{color:var(--red)}
+.turn.them .txt{background:#2b2b2b;color:var(--paper);border-left:5px solid var(--red)}
+.turn.you{margin-left:auto}
+.turn.you .lbl{color:var(--yellow);text-align:right}
+.turn.you .txt{background:var(--yellow);color:var(--ink);font-weight:600;border-right:5px solid #fff}
+.turn.sys{max-width:100%}
+.turn.sys .txt{background:none;color:#9a9a9a;font-family:var(--mono);font-size:12.5px;padding:0}
+.dialbar{display:flex;border-top:4px solid var(--red)}
+.dialbar textarea{flex:1;background:#fff;border:0;padding:14px;font-family:var(--body);font-size:15px;resize:none;min-height:62px}
+.dialbar textarea:focus{outline:3px solid var(--yellow);outline-offset:-3px}
+button.go{background:var(--yellow);border:0;border-left:4px solid var(--red);cursor:pointer;font-family:var(--display);text-transform:uppercase;font-size:14px;padding:0 24px;transition:background .12s}
+button.go:hover{background:#fff}
+button.go:disabled{background:#7a7a7a;color:#ddd;cursor:not-allowed}
+.ctlrow{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}
+button.btn{background:var(--ink);color:var(--yellow);border:0;cursor:pointer;padding:12px 20px;font-family:var(--display);text-transform:uppercase;font-size:13px}
+button.btn:hover{background:var(--red);color:#fff}
+button.btn.alt{background:var(--red);color:#fff}
+button.btn.alt:hover{background:var(--ink);color:var(--yellow)}
+button.btn:disabled{background:#999;color:#eee;cursor:not-allowed}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+select{font-family:var(--mono);font-size:13px;padding:11px;border:3px solid var(--ink);background:#fff;cursor:pointer}
+.score{background:#fff;border:4px solid var(--ink);border-left:14px solid var(--red);padding:22px;margin-top:20px}
+.score h4{font-family:var(--display);text-transform:uppercase;font-size:1.3rem;margin-bottom:12px}
+.bignum{font-family:var(--display);font-size:3.4rem;line-height:1;color:var(--red)}
+.flag{background:var(--red);color:#fff;font-family:var(--mono);font-size:12px;padding:10px 12px;margin-top:8px}
+
+.form{background:#fff;border:3px solid var(--ink);padding:22px;margin:20px 0}
+.frow{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;margin-bottom:5px}
+input[type=text],.form select{width:100%;font-family:var(--body);font-size:14.5px;padding:10px;border:2px solid var(--ink);background:var(--paper)}
+.out{font-family:var(--mono);font-size:13px;background:var(--ink);color:var(--yellow);padding:16px;margin-top:16px;white-space:pre-wrap;display:none}
+
+.q{background:#fff;border:3px solid var(--ink);padding:20px;margin-bottom:14px}
+.q.wrong{border-color:var(--red);border-left-width:14px}
+.q.right{border-left:14px solid var(--ink)}
+.qn{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--red);font-weight:600;margin-bottom:8px}
+.qt{font-weight:700;margin-bottom:14px;max-width:74ch}
+.opt{display:block;padding:9px 12px;margin-bottom:7px;border:2px solid var(--ink);cursor:pointer;background:var(--paper);font-size:14.5px}
+.opt:hover{background:var(--yellow)}
+.opt input{margin-right:9px}
+.opt.pick{background:var(--yellow)}
+.fb{font-family:var(--mono);font-size:13px;padding:12px;margin-top:10px;background:var(--ink);color:var(--yellow);display:none}
+.fb.show{display:block}
+.sticky-score{position:sticky;bottom:0;background:var(--ink);color:var(--yellow);padding:16px 20px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;border-top:5px solid var(--red);font-family:var(--mono);font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin-top:22px}
+footer{background:var(--ink);color:#8d8d8d;padding:30px 0;font-family:var(--mono);font-size:11.5px;letter-spacing:.08em}
+footer strong{color:var(--yellow)}
+.spin{display:inline-block;width:11px;height:11px;border:2px solid var(--yellow);border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media(max-width:600px){.dialbar{flex-direction:column}button.go{padding:15px;border-left:0;border-top:4px solid var(--red)}.log{height:340px}}
+</style>
+</head>
+<body>
+
+<div class="hazard"></div>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">Equity Track · The Desk · Dispositions Training</span>
+    <h1>Move now.<br>Stay in<br><span class="flare">your lane.</span></h1>
+    <p class="hero-sub">Cash keeps our doors open. Speed is how we get it. And the fastest way to lose all of it is one person on the phone saying something he isn't allowed to say.</p>
+    <div class="hero-meta">
+      <span class="hot">8-hour shift</span>
+      <span>4 hrs training</span>
+      <span>4 hrs dialing</span>
+      <span>Pass mark 85%</span>
+    </div>
+  </div>
+</header>
+
+<nav>
+  <div class="navrow" role="tablist">
+    <button role="tab" aria-selected="true" data-p="who">Who we are</button>
+    <button role="tab" aria-selected="false" data-p="wh">What a wholesale is</button>
+    <button role="tab" aria-selected="false" data-p="lane">Your lane</button>
+    <button role="tab" aria-selected="false" data-p="call">The call</button>
+    <button role="tab" aria-selected="false" data-p="push">If they push back</button>
+    <button role="tab" aria-selected="false" data-p="cap">Capture the buy box</button>
+    <button role="tab" aria-selected="false" data-p="day">Your 8-hour day</button>
+    <button role="tab" aria-selected="false" data-p="prac">Live practice</button>
+    <button role="tab" aria-selected="false" data-p="exam">Certification</button>
+  </div>
+</nav>
+
+<main>
+
+<!-- ============ WHO WE ARE ============ -->
+<section class="panel on" id="who">
+<div class="wrap">
+  <div class="mod">Module 01 — Culture</div>
+  <h2>This is<br>who we are</h2>
+  <p class="lede">Read this part twice. Everything else on this site is technique. This part is the reason the technique matters.</p>
+
+  <div class="grid2">
+    <div class="value">
+      <div class="num">01</div>
+      <h4>We move now</h4>
+      <p>Not this week. Now. If a call can be made today it gets made today. If a file can go out in ten minutes it goes out in ten minutes. We beat bigger companies because they schedule things and we do them.</p>
+    </div>
+    <div class="value">
+      <div class="num">02</div>
+      <h4>Cash keeps the doors open</h4>
+      <p>Every deal that closes pays for payroll, rent, and the next opportunity. We are not chasing volume or applause. We are chasing collected cash, and we want as much of it as the deal can honestly produce.</p>
+    </div>
+    <div class="value">
+      <div class="num">03</div>
+      <h4>Our people are the foundation</h4>
+      <p>We treat people well — our team, our sellers, our agents, our buyers. We look after our own. You will be trained, backed up, and taken care of here. In exchange we expect you to protect the company the same way.</p>
+    </div>
+    <div class="value">
+      <div class="num">04</div>
+      <h4>We tell the truth on the phone</h4>
+      <p>We don't own it? We say we don't own it. We're not an agent? We say so out loud, before anyone has to ask. Honesty is not a compliance requirement here. It is the reason agents take our calls twice.</p>
+    </div>
+  </div>
+
+  <h3>What you actually do here</h3>
+  <p>You work for <strong>Equity Track</strong>. We are an investment company. We buy residential real estate in Northern California, on-market and off-market. We can close with our own money.</p>
+  <p>Your job is dispositions. Acquisitions finds the property. <strong>You find the best way out of it</strong> — and you build the network of people who make that possible before we need them.</p>
+
+  <div class="stop">
+    <h4>Why the boundaries in this training exist</h4>
+    <p>You will be talking to licensed agents every day. They know the rules. The moment you sound like you're acting as an agent — quoting what a house should list for, negotiating on someone else's behalf, haggling like a salesman — you have created a real problem for this company and a real problem for yourself.</p>
+    <p>We are not being careful because we are timid. We are being careful because <strong>this is a business that pays well for decades if you don't blow it up in a single phone call.</strong></p>
+  </div>
+</div>
+</section>
+
+<!-- ============ WHAT A WHOLESALE IS ============ -->
+<section class="panel" id="wh">
+<div class="wrap">
+  <div class="mod">Module 02 — Fundamentals</div>
+  <h2>What a<br>wholesale<br>actually is</h2>
+  <p class="lede">You cannot explain this to an agent if you don't understand it yourself. Most people who get in trouble get in trouble here.</p>
+
+  <h3>The one idea underneath everything</h3>
+  <p>When we sign a purchase agreement with a seller, we get something real. It's called an <strong>equitable interest</strong> — a contractual right to buy that property at an agreed price.</p>
+  <p>We don't own the house. We own <em>the contract</em>.</p>
+  <p>And here's the part that matters: <strong>the contract is ours to sell.</strong> That's our own property, our own position, our own asset. Selling something we own is not brokerage. That is the entire legal foundation of what you do.</p>
+
+  <div class="say">
+    <div class="who">Say this to yourself before every call</div>
+    <p>"I am not selling their house. I am selling our contract."</p>
+  </div>
+
+  <h3>The four exits — know all four cold</h3>
+  <table>
+    <thead><tr><th>Exit</th><th>What happens</th><th>What you say on the phone</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="t">Assignment</td>
+        <td>We hand our contract to another investor for a fee. They close with the seller. We never take title.</td>
+        <td>"We're looking to wholesale the transaction."</td>
+      </tr>
+      <tr>
+        <td class="t">Double close</td>
+        <td>We close with the seller, then immediately resell to the investor. Two closings, same day or days apart.</td>
+        <td>"We're looking to wholesale the transaction." Same phrase — the mechanics are our business, not the agent's.</td>
+      </tr>
+      <tr>
+        <td class="t">Wholetail</td>
+        <td>We close on it ourselves, do light work — haul the junk, paint, cut the grass, clean it up — then put it right back on the market. No full renovation.</td>
+        <td>"We may close on it and put it back on the market — clean it up a little, cut the grass, and list it."</td>
+      </tr>
+      <tr>
+        <td class="t">Full flip</td>
+        <td>We close, renovate properly, then list it. Longest timeline, biggest spread.</td>
+        <td>"We may close on it, fix it up, and list it with an agent."</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Wholetail is the one people get confused about.</strong> It is not a flip and it is not a wholesale. It's the middle path: we take title, spend a small amount to make it presentable, and sell it retail. It matters to your call because it's a genuine reason an agent might get a listing out of you.</p>
+
+  <h3>Two numbers, two different worlds</h3>
+  <p>This is the distinction that keeps you out of trouble. There are two completely different prices in any conversation, and you are allowed to talk about exactly one of them.</p>
+  <table>
+    <thead><tr><th>&nbsp;</th><th>The number</th><th>Can you say it?</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="yes">OURS</td>
+        <td>What Equity Track wants for its own contract position. "If we wholesale the transaction we'd want at least the number in the file."</td>
+        <td class="yes">YES — it's our own asset and our own asking price. Read it off the file. Never from memory.</td>
+      </tr>
+      <tr>
+        <td class="no">THEIRS</td>
+        <td>What the property should be listed at, what it will appraise for, what a buyer should offer, what the ARV is.</td>
+        <td class="no">NO — that is licensed advice. That is the agent's job. That is where you hand it off.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="stop">
+    <h4>Where the trouble comes from</h4>
+    <p>Not from naming our price. From <strong>acting like a salesman holding prices</strong> — going back and forth, defending a valuation, telling an agent what the market will bear, negotiating a retail sale. That is an agent's work, and doing it without a license is the thing that ends careers and costs companies money.</p>
+    <p>You state our number once, from the file. Then you stop. Anything after that goes to Bryan.</p>
+  </div>
+</div>
+</section>
+
+<!-- ============ YOUR LANE ============ -->
+<section class="panel" id="lane">
+<div class="wrap">
+  <div class="mod">Module 03 — Boundaries</div>
+  <h2>Your lane —<br>and the fence<br>around it</h2>
+  <p class="lede">Who you are: a dispositions rep at an investment company. Not an agent. Not a broker. Not a negotiator for anybody but us.</p>
+
+  <h3>Say it before they ask</h3>
+  <p>The moment price, value, or listing comes up, you get ahead of it. Out loud, in your own words, every single time:</p>
+  <div class="say">
+    <div class="who">The disclosure — this is the most protective sentence you own</div>
+    <p>"Quick disclosure here — I'm not a real estate agent. I'm not trying to be a real estate agent. My company either wants to find someone to list the property, or we'll put it right back on the market ourselves."</p>
+  </div>
+  <p>Say it early and say it relaxed. It costs you nothing and it removes the single biggest reason an agent would ever have a problem with your call.</p>
+
+  <h3>The fence</h3>
+  <table>
+    <thead><tr><th>&nbsp;</th><th>What you do</th></tr></thead>
+    <tbody>
+      <tr><td class="yes">YOU CAN</td><td>Give your name and say you're with Equity Track, an investment company.</td></tr>
+      <tr><td class="yes">YOU CAN</td><td>Say we have the property under contract and it's off market.</td></tr>
+      <tr><td class="yes">YOU CAN</td><td>Say we're either wholesaling the transaction, or closing and putting it back on the market.</td></tr>
+      <tr><td class="yes">YOU CAN</td><td>Say title is already open, and where.</td></tr>
+      <tr><td class="yes">YOU CAN</td><td>State what our company wants for the transaction — read from the file.</td></tr>
+      <tr><td class="yes">YOU CAN</td><td>Say we're looking for an agent to list it, and that their brokerage gets paid through escrow.</td></tr>
+      <tr><td class="yes">YOU CAN</td><td>Ask what their investor clients buy, where, at what price, and how fast.</td></tr>
+      <tr><td class="yes">YOU CAN</td><td>Send the property file, photos, and address.</td></tr>
+      <tr><td class="no">NEVER</td><td>Say or imply you're an agent, broker, or Realtor — or that you're "representing" anyone.</td></tr>
+      <tr><td class="no">NEVER</td><td>Say we own the property when we don't.</td></tr>
+      <tr><td class="no">NEVER</td><td>Tell an agent what the property should list for, what it'll appraise at, or what the ARV is.</td></tr>
+      <tr><td class="no">NEVER</td><td>Negotiate a retail sale, or go back and forth defending a price. State ours once, then stop.</td></tr>
+      <tr><td class="no">NEVER</td><td>Discuss the seller — their name, their situation, why they're selling, what they'd take.</td></tr>
+      <tr><td class="no">NEVER</td><td>Quote a rehab cost, a permit status, or a square footage as fact. "I'll get you the file."</td></tr>
+      <tr><td class="no">NEVER</td><td>Accept an offer or say "we can do that." Every number goes to Bryan. Below floor goes to Juan.</td></tr>
+      <tr><td class="no">NEVER</td><td>Offer to pay an agent personally. Commissions go to the brokerage, through escrow.</td></tr>
+      <tr><td class="no">NEVER</td><td>Call about a specific property before the purchase agreement is signed and in the file.</td></tr>
+      <tr><td class="no">NEVER</td><td>Promise a closing date, a timeline, or a repair we haven't agreed to.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="stop">
+    <h4>The two-second rule for anything unusual</h4>
+    <p>If a call turns into something you weren't trained for — someone asking about the company itself, about a mailer or a campaign, about a dispute, about a lawyer, or anyone calling from an agency or a government office — you say one thing:</p>
+    <p><strong>"I'm not the right person for that. Let me get you to the right person and have them call you back today."</strong></p>
+    <p>Then you take a name and a number, say nothing else, answer no questions, promise nothing, and you get it to Juan immediately. Not tomorrow. Immediately. You will never be in trouble here for routing something up. You can absolutely be in trouble for improvising.</p>
+  </div>
+
+  <h3>Three phrases that end your call safely</h3>
+  <div class="grid2">
+    <div class="card"><h4>"I'll get you the file."</h4><p>Covers every factual question you can't answer — condition, cost, size, permits, comps.</p></div>
+    <div class="card"><h4>"That's a question for our team, I'll get an answer today."</h4><p>Covers price movement, terms, timelines, anything that smells like negotiation.</p></div>
+    <div class="card"><h4>"I'm not a real estate agent, so that part's yours."</h4><p>Covers list price, market strategy, and anything requiring a license.</p></div>
+  </div>
+</div>
+</section>
+
+<!-- ============ THE CALL ============ -->
+<section class="panel" id="call">
+<div class="wrap">
+  <div class="mod">Module 04 — The script</div>
+  <h2>The call,<br>word for word</h2>
+  <p class="lede">This is the script. Not a starting point, not an inspiration — the script. Learn it until it sounds like you, then don't wander off it.</p>
+
+  <p>Before you dial you know one thing: <strong>this agent sold something near our property.</strong> That's why you're calling and you say it out loud.</p>
+
+  <div class="say">
+    <div class="who">The opener</div>
+    <p>"Hello — my name is Danny, I'm with Equity Track. I have a property in Oakland and wanted to see if you had a few minutes to talk."</p>
+    <p class="them">"Yeah, go ahead."</p>
+    <p>"I saw you did the one around the corner."</p>
+    <p class="them">"Yep, that was mine."</p>
+    <p>"Okay, great — thank you. So I have this property. It's under contract, it's off market. We're either going to close on it and put it back on the market — we're thinking maybe a wholetail, where we go in, clean it up a little, cut the grass, and list it right back on the market — or we're going to wholesale the transaction. Title is already open, it's open at CWFG. And that's pretty much it."</p>
+    <p class="beat">— then stop talking —</p>
+  </div>
+
+  <h3>Why every piece of that is in there</h3>
+  <table>
+    <thead><tr><th>Line</th><th>Job it does</th></tr></thead>
+    <tbody>
+      <tr><td class="t">"A few minutes to talk"</td><td>Asks permission. An agent who says yes has agreed to the conversation instead of enduring it.</td></tr>
+      <tr><td class="t">"I saw you did the one around the corner"</td><td>Proves you did homework. This is the whole difference between you and the spam they delete.</td></tr>
+      <tr><td class="t">"Under contract, off market"</td><td>Honest position, stated before they have to ask. You're a real buyer with a real contract.</td></tr>
+      <tr><td class="t">"Close on it and put it back on the market"</td><td>A possible listing for them. This is a reason to like you.</td></tr>
+      <tr><td class="t">"Or wholesale the transaction"</td><td>A possible deal for their investor buyer. Second reason to like you.</td></tr>
+      <tr><td class="t">"Title is already open at CWFG"</td><td>The credibility line. Tire-kickers don't have title open. This says we're actually doing this.</td></tr>
+      <tr><td class="t">"That's pretty much it"</td><td>Hands them the floor. Do not fill this silence.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>When they ask the price question</h3>
+  <p>They will. "What are you asking for it?" Here is the full answer, and notice the order — <strong>disclosure first, number second, handoff third.</strong></p>
+  <div class="say">
+    <div class="who">The price answer</div>
+    <p class="them">"What are you asking for it?"</p>
+    <p>"So — quick disclosure here. I'm not a real estate agent. I'm not trying to be a real estate agent. My company is either looking for someone to list the property, or we'll put it right back on the market ourselves.</p>
+    <p>If we wholesale the transaction, we'd want at least the number in the file. And on pricing for what the property should actually sell for — that's where you'd come in. That's exactly the kind of agent we're looking for to step in."</p>
+  </div>
+  <p><strong>Read the wholesale number off the file every time.</strong> Never from memory, never rounded, never "somewhere around." One number, once, from the file. Then you're done talking about price.</p>
+  <p>And notice what that last sentence does: it takes the thing you're not allowed to do — set a retail price — and turns it into <em>the reason you want them on the deal.</em> You didn't dodge. You promoted them.</p>
+
+  <div class="stop">
+    <h4>Do not sound like a script</h4>
+    <p>Read this out loud twenty times until the words stop being words on a screen. Then close the screen and talk like a person. If an agent can hear you reading, the call is already over.</p>
+  </div>
+
+  <h3>The handoff</h3>
+  <div class="say">
+    <div class="who">Close every good call like this</div>
+    <p>"Perfect — I'll send you the address and the photos in the next ten minutes. What's the best email? And while I've got you: what are your investor clients actually looking for right now?"</p>
+  </div>
+</div>
+</section>
+
+<!-- ============ PUSHBACK ============ -->
+<section class="panel" id="push">
+<div class="wrap">
+  <div class="mod">Module 05 — Objections</div>
+  <h2>When they<br>push back</h2>
+  <p class="lede">Every real agent tests you. Most of the tests are the same six questions, and every one has a clean answer that keeps you in your lane.</p>
+
+  <h3>"Do you own the house? What's going on with it?"</h3>
+  <div class="say">
+    <div class="who">Answer straight and fast</div>
+    <p>"No — of course. I'm with Equity Track, we're an investment company. We've got it under contract, off market. We're either going to wholesale the transaction, or close on it, clean it up a little, and put it right back on the market. Title's already open at CWFG."</p>
+  </div>
+  <p><strong>Why "no, of course" works:</strong> it's honest, it's relaxed, and it tells the agent this is a normal question you field all day. Hesitate here and they decide you're hiding something.</p>
+
+  <table>
+    <thead><tr><th>They say</th><th>You say</th></tr></thead>
+    <tbody>
+      <tr><td class="t">"So you're a wholesaler."</td><td>"We're an investment company — we buy with our own money and we also wholesale transactions. On this one either works, which is why I'm calling you."</td></tr>
+      <tr><td class="t">"What do you think it should list for?"</td><td>"I'm not an agent, so I'm honestly not the guy to answer that — that's the part we'd want you for. What would you list it at?" <strong>Then listen. That answer is free intelligence.</strong></td></tr>
+      <tr><td class="t">"Can you do $240 instead?"</td><td>"I can't move a number on this call. Let me take it to my team and get you an answer today." Never negotiate. Never counter.</td></tr>
+      <tr><td class="t">"Why is the seller selling? What's their situation?"</td><td>"I'm not going to get into the seller's business. I can get you everything about the property, though."</td></tr>
+      <tr><td class="t">"What's the ARV? What's the rehab run?"</td><td>"I'll get you the file and the photos so you can run your own numbers." Never estimate either one.</td></tr>
+      <tr><td class="t">"Is it listed? Am I getting paid?"</td><td>"It's off market. If your buyer takes it, your brokerage gets paid through escrow — have your broker send us the commission instruction."</td></tr>
+      <tr><td class="t">"Just pay me directly, easier that way."</td><td>"Can't do that — it goes to your brokerage through escrow. That protects you more than it protects me."</td></tr>
+      <tr><td class="t">"My clients wouldn't touch that neighborhood."</td><td>"Got it. What neighborhoods <em>are</em> your investor clients buying?" <strong>Write it down. That call just succeeded.</strong></td></tr>
+      <tr><td class="t">"Not interested." (hang-up energy)</td><td>"No problem. Quick one before you go — what are your investor clients looking for, so I only call you when I've actually got it?"</td></tr>
+      <tr><td class="t">"Take me off your list."</td><td>"Understood, I'll take you off right now. Thanks for your time." Log it. Never call again.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="stop">
+    <h4>A "no" is only a failure if you hang up empty</h4>
+    <p>An agent who passes on the property but tells you their buyer wants Alameda duplexes, $700K to $1M, cosmetic only, cash in 12 days — that agent just paid you. Six months from now an Alameda duplex lands and you know exactly who to call.</p>
+  </div>
+</div>
+</section>
+
+<!-- ============ CAPTURE ============ -->
+<section class="panel" id="cap">
+<div class="wrap">
+  <div class="mod">Module 06 — The record</div>
+  <h2>If it's not<br>written down,<br>it didn't happen</h2>
+  <p class="lede">Your memory is not the database. Every conversation ends with these fields filled in.</p>
+
+  <div class="form">
+    <div class="frow">
+      <div><label for="f-name">Name</label><input type="text" id="f-name" placeholder="Mike Reyes"></div>
+      <div><label for="f-type">Contact type</label>
+        <select id="f-type"><option>Agent</option><option>Investor / flipper</option><option>Landlord</option><option>Developer</option><option>Contractor-investor</option></select>
+      </div>
+      <div><label for="f-mkt">Market they buy</label><input type="text" id="f-mkt" placeholder="East Oakland, Fruitvale"></div>
+      <div><label for="f-price">Price band</label><input type="text" id="f-price" placeholder="$550K-$850K"></div>
+      <div><label for="f-rehab">Rehab tolerance</label>
+        <select id="f-rehab"><option>Cosmetic only</option><option>Medium</option><option>Heavy / full gut</option><option>Unknown - ask next call</option></select>
+      </div>
+      <div><label for="f-close">Close speed &amp; funds</label><input type="text" id="f-close" placeholder="12 days, cash"></div>
+      <div><label for="f-want">What they can't find right now</label><input type="text" id="f-want" placeholder="Another duplex in Oakland"></div>
+      <div><label for="f-next">Next action + date</label><input type="text" id="f-next" placeholder="Send file today; call back Fri"></div>
+    </div>
+    <div class="ctlrow">
+      <button class="btn" id="mk">Build the record</button>
+      <button class="btn alt" id="cp">Copy for REI BlackBook</button>
+    </div>
+    <div class="out" id="out"></div>
+  </div>
+
+  <h3>The four questions that fill it</h3>
+  <ol>
+    <li><strong>"Where are your investor clients buying?"</strong></li>
+    <li><strong>"What's their price range, and how much work will they take on?"</strong></li>
+    <li><strong>"How fast can they close, and is it cash?"</strong></li>
+    <li><strong>"What's something they're having trouble finding right now?"</strong></li>
+  </ol>
+  <p>That fourth question is the whole job. When an agent tells you their buyer desperately needs another Oakland duplex, you just handed acquisitions a shopping list. We stop selling houses and start matching inventory to demand.</p>
+
+  <div class="stop">
+    <h4>Your daily floor</h4>
+    <ul>
+      <li><strong>20</strong> contact attempts a day</li>
+      <li><strong>8</strong> real conversations logged a day</li>
+      <li><strong>5</strong> new buy boxes a week</li>
+      <li><strong>15</strong> net-new people contacted before a property goes to our usual buyers</li>
+    </ul>
+  </div>
+</div>
+</section>
+
+<!-- ============ DAY ============ -->
+<section class="panel" id="day">
+<div class="wrap">
+  <div class="mod">Module 07 — The shift</div>
+  <h2>Your<br>8-hour day</h2>
+  <p class="lede">Four hours of training. Four hours on the phone. Every day, whether or not we have a property to sell.</p>
+
+  <table>
+    <thead><tr><th>Block</th><th>Hours</th><th>What you're doing</th></tr></thead>
+    <tbody>
+      <tr><td class="t">1 · Drill</td><td>2.0</td><td>Live practice on this site. The opener, the ownership answer, the price answer. Ten graded calls minimum.</td></tr>
+      <tr><td class="t">2 · Study</td><td>1.0</td><td>Build tomorrow's call list — agent name, brokerage, the comp they sold near us, phone number.</td></tr>
+      <tr><td class="t">3 · Clean</td><td>1.0</td><td>Work REI BlackBook. Fill missing buy-box fields, kill duplicates, flag anyone 90 days cold.</td></tr>
+      <tr><td class="t">4 · Dial</td><td>3.0</td><td>Live calls. Agents first, then investors. 20 attempts is the floor, not the target.</td></tr>
+      <tr><td class="t">5 · Log</td><td>1.0</td><td>Every record written, every file sent, every follow-up dated. Day's not over till the sheet is clean.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Practicing with AI — read this part carefully</h3>
+  <p>The drill block uses AI as a sparring partner and it works. But be clear on what it is: <strong>a practice opponent, not a source of facts.</strong></p>
+  <div class="grid2">
+    <div class="card"><h4>Use it for</h4><p>Reps. Tone. Getting the opener smooth. Running the price answer thirty times without burning a real agent.</p></div>
+    <div class="card"><h4>Never use it for</h4><p>Anything you'd repeat as fact — prices, comps, ARVs, rehab costs, permit status, market statistics. Models invent numbers with total confidence.</p></div>
+  </div>
+  <p>If the practice partner gives you a comp or an ARV, it made it up. Ignore it and keep drilling the conversation. Every real number you say out loud comes off the property file.</p>
+
+  <div class="stop">
+    <h4>No property today? Then it's a network day.</h4>
+    <p>Zero inventory does not mean zero work. All four dialing hours go to relationship calls with no specific address attached — which are also the calls with no contract requirement. Build Thursday's buyer three months early.</p>
+  </div>
+</div>
+</section>
+
+<!-- ============ PRACTICE ============ -->
+<section class="panel" id="prac">
+<div class="wrap">
+  <div class="mod">Module 08 — Live drill</div>
+  <h2>Get an agent<br>on the phone</h2>
+  <p class="lede">A Bay Area agent picks up. Run the script. They will test you — and two of these five are specifically trying to pull you out of your lane.</p>
+
+  <div class="stop">
+    <h4>Live practice happens in your training link</h4>
+    <p>Voice practice has moved into the training app: open your personal training link, finish the modules, and your <strong>dialer</strong> unlocks. You place a real outbound voice call, one of six Bay Area agents picks up, and the call is graded automatically on the 12-item sheet &mdash; any licensing-boundary breach is an automatic fail.</p>
+    <p>Certification: <strong>5 passed calls</strong> &mdash; and one of them will be the agent who tries to pull you across the line. You will not know which call that is. That is the point.</p>
+  </div>
+</div>
+</section>
+
+<!-- ============ EXAM ============ -->
+<section class="panel" id="exam">
+<div class="wrap">
+  <div class="mod">Module 09 — Certification</div>
+  <h2>Certification<br>exam</h2>
+  <p class="lede">20 questions. 17 correct to pass — 85%. No live calls until you clear it.</p>
+  <div id="quiz"></div>
+  <div class="sticky-score">
+    <span id="tally">0 of 20 answered</span>
+    <button class="btn" id="submit">Score my exam</button>
+  </div>
+  <div id="result"></div>
+</div>
+</section>
+
+</main>
+
+<div class="hazard-red"></div>
+<footer>
+  <div class="wrap">
+    <strong>EQUITY TRACK · THE DESK</strong><br>
+    Internal training. Not for distribution outside the company.<br>
+    Contract in the file before any property call · You are not an agent, and you say so · Commissions to the brokerage via escrow · No number moves without Bryan · Anything unusual goes to Juan the same day.
+  </div>
+</footer>
+
+<script>
+const tabs=[...document.querySelectorAll('nav button')];
+tabs.forEach(t=>t.onclick=()=>{
+  tabs.forEach(x=>x.setAttribute('aria-selected',x===t));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id===t.dataset.p));
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+const F=id=>document.getElementById(id).value.trim();
+function record(){
+  const miss=[];
+  if(!F('f-name'))miss.push('name');
+  if(!F('f-mkt'))miss.push('market');
+  if(!F('f-price'))miss.push('price band');
+  if(!F('f-close'))miss.push('close speed');
+  const body='CONTACT: '+(F('f-name')||'-')+
+  '\nTYPE: '+document.getElementById('f-type').value+
+  '\nMARKET: '+(F('f-mkt')||'-')+
+  '\nPRICE BAND: '+(F('f-price')||'-')+
+  '\nREHAB: '+document.getElementById('f-rehab').value+
+  '\nCLOSE / FUNDS: '+(F('f-close')||'-')+
+  "\nCAN'T FIND: "+(F('f-want')||'-')+
+  '\nNEXT ACTION: '+(F('f-next')||'-');
+  return {body,miss};
+}
+document.getElementById('mk').onclick=()=>{
+  const r=record(),o=document.getElementById('out');
+  o.style.display='block';
+  o.textContent=r.body+(r.miss.length?'\n\n>> INCOMPLETE - still need: '+r.miss.join(', ')+'. Call them back.':'\n\n>> COMPLETE. Paste into REI BlackBook.');
+};
+document.getElementById('cp').onclick=async()=>{
+  const r=record();
+  try{await navigator.clipboard.writeText(r.body);
+    const b=document.getElementById('cp');b.textContent='Copied';setTimeout(()=>b.textContent='Copy for REI BlackBook',1400);
+  }catch(e){
+    const o=document.getElementById('out');o.style.display='block';
+    o.textContent=r.body+'\n\n>> Clipboard blocked. Select the text above and copy it manually.';
+  }
+};
+
+const Q=[
+ {q:'When we sign a purchase agreement with a seller, what does Equity Track actually own?',
+  o:['The house.','The contract - an equitable interest, our own asset that we are allowed to sell.','Nothing until we close.','The seller\u2019s equity.'],a:1,
+  f:'We own the contract, not the house. Selling our own contract position is not brokerage. That is the entire legal foundation of your job.'},
+ {q:'An agent asks "do you own the house?"',
+  o:['"We control it, that is all you need to know."','"No, of course - we have it under contract, off market. We are either wholesaling the transaction or closing on it and putting it back on the market."','"Yes, we own it outright."','Change the subject and ask about their buyers.'],a:1,
+  f:'Straight and fast. "No, of course" plus the position. Any dodge and the agent decides you are hiding something.'},
+ {q:'What is a wholetail?',
+  o:['A full renovation before listing.','Assigning the contract to another investor.','Closing on it ourselves, doing light work - haul the junk, paint, cut the grass - then putting it right back on the market.','Selling to a hotel operator.'],a:2,
+  f:'The middle path. Not a flip, not a wholesale. It matters on your call because it is a real reason an agent might get a listing out of us.'},
+ {q:'Which price are you allowed to state on a call?',
+  o:['Whatever the property should list for.','What Equity Track wants for its own contract position - read off the file.','The ARV.','What you personally think it is worth.'],a:1,
+  f:'Ours, not theirs. Our asking price for our own asset is ours to name. What the property should sell for is licensed advice.'},
+ {q:'An agent asks "what do you think it should list for?"',
+  o:['Give them your best estimate to sound credible.','"I am not an agent, so I am honestly not the guy for that - that is the part we would want you for. What would you list it at?"','Quote the ARV from the file.','Say you cannot discuss it and move on.'],a:1,
+  f:'You do not dodge, you promote them. Then listen - their answer is free market intelligence.'},
+ {q:'The disclosure you give whenever price or listing comes up:',
+  o:['"I am a licensed investor."','"I am not a real estate agent. I am not trying to be a real estate agent. My company either wants someone to list it, or we will put it back on the market ourselves."','"I work with agents all the time."','Nothing - only say it if they ask.'],a:1,
+  f:'The most protective sentence you own. Say it early, say it relaxed, say it before they have to ask.'},
+ {q:'Why do we mention that title is already open?',
+  o:['It is required by law.','It is the credibility line - tire-kickers do not have title open. It says we are actually doing this.','To get the agent to call the title company.','It fills the silence.'],a:1,
+  f:'Title open at CWFG separates you instantly from every person who calls agents about a deal they do not really have.'},
+ {q:'The agent says "can you do $240 instead?"',
+  o:['Counter at $250.','Explain why our number is fair and hold firm.','"I cannot move a number on this call. Let me take it to my team and get you an answer today."','Accept it if it is above our floor.'],a:2,
+  f:'Never negotiate, never counter, never defend a price. Acting like a salesman holding prices is exactly what gets us in trouble. It goes to Bryan.'},
+ {q:'The agent asks why the seller is selling and whether they would take less.',
+  o:['Tell them - it builds trust.','Say the seller is motivated.','"I am not going to get into the seller\u2019s business. I can get you everything about the property, though."','Say you do not know.'],a:2,
+  f:'The seller\u2019s situation is never yours to discuss. That is a confidence you do not have permission to spend.'},
+ {q:'An agent offers to have you paid directly, cash, off the books, instead of dealing with their brokerage.',
+  o:['Take it - simpler for everyone.','"Cannot do that - it goes to your brokerage through escrow. That protects you more than it protects me."','Ask your manager later and stay vague now.','Split the difference.'],a:1,
+  f:'Compensation always goes to the brokerage through escrow. Paying an agent personally creates a licensing problem for them and exposure for us.'},
+ {q:'You found an agent who sold two blocks away. The purchase agreement is not signed yet.',
+  o:['Call and describe the property - close enough to signed.','Call but do not name the exact address.','Do not call about that property. General network calls with no specific property are always fine.','Text photos and ask them to keep it quiet.'],a:2,
+  f:'No signed contract, no calls about that property. If we do not control it, we have nothing to sell and talking about it is a real problem.'},
+ {q:'The agent asks what the rehab will run. You looked at photos and figure about $80K.',
+  o:['Say "roughly eighty thousand."','"I will get you the file and the photos so you can run your own numbers."','Say "under a hundred grand."','Say it is cosmetic only.'],a:1,
+  f:'Never a rehab cost, an ARV, a permit status, or a square footage as fact. Every number you say comes off the file.'},
+ {q:'The three sentences of the opener, in order:',
+  o:['Name and company plus the property plus a few minutes to talk; the comp they sold; the two exits and title open.','A full explanation of our business model.','Ask if they are taking new clients.','Lead with the price and the spread.'],a:0,
+  f:'"Danny with Equity Track, property in Oakland, few minutes to talk?" / "I saw you did the one around the corner." / The two exits, title open, that is pretty much it.'},
+ {q:'Right after you say "and that is pretty much it," what do you do?',
+  o:['Start describing the condition.','Stop talking and let them respond.','Add that it is a great opportunity.','Ask for their email.'],a:1,
+  f:'The silence is where they tell you what you need. Fill it and you get nothing.'},
+ {q:'Someone calls asking questions about the company, a mailer, or a legal matter.',
+  o:['Answer honestly - we have nothing to hide.','Say you do not know anything and hang up.','"I am not the right person for that." Take a name and number, say nothing else, promise nothing, and get it to Juan immediately.','Refer them to our website.'],a:2,
+  f:'One sentence, take the number, route it up the same day. You will never be in trouble for routing something up. You can be in trouble for improvising.'},
+ {q:'An agent says "my clients would not touch that neighborhood."',
+  o:['Explain why the neighborhood is improving.','Thank them and hang up.','"Got it. What neighborhoods ARE your investor clients buying?"','Ask them to send it to their buyers anyway.'],a:2,
+  f:'That call just succeeded. You are about to get a buy box, which is worth more long term than a maybe on this property.'},
+ {q:'An investor says on the phone he will pay $290,000.',
+  o:['Accept - it is over our number.','Counter at $300,000.','"Let me take that to my team and come right back to you." Accept nothing verbally.','Tell him to send a contract and consider it done.'],a:2,
+  f:'You never accept. No verbal yes, no "we can do that." Every number goes to Bryan; below floor goes to Juan.'},
+ {q:'Which question most often turns into money six months later?',
+  o:['"Are you interested in this one?"','"What is your commission split?"','"What is something your buyers are having trouble finding right now?"','"How long have you been an agent?"'],a:2,
+  f:'That answer becomes a shopping list for acquisitions. We stop selling houses and start matching inventory to demand.'},
+ {q:'The AI practice partner tells you nearby comps sold at $1.35M. What do you do with that?',
+  o:['Use it on your next real call - it came from AI.','Ignore it. Practice AI invents numbers. Only the property file is a source of fact.','Verify it with the agent on the call.','Log it as the ARV.'],a:1,
+  f:'Use the practice partner for reps and tone, never for facts. Models fabricate numbers with total confidence.'},
+ {q:'We have zero properties available today. What does your dialing block look like?',
+  o:['You skip dialing and do admin.','Four full hours of relationship calls with no specific property attached, building buy boxes.','Call the same five buyers to check in.','Wait for acquisitions to send something.'],a:1,
+  f:'Properties available means sell. No properties means build the network that sells the next one. There is never zero disposition work.'}
+];
+const qEl=document.getElementById('quiz');const picks={};
+Q.forEach((item,i)=>{
+  const d=document.createElement('div');d.className='q';d.id='q'+i;
+  d.innerHTML='<div class="qn">Question '+(i+1)+' of 20</div><div class="qt"></div>'+
+    item.o.map((o,j)=>'<label class="opt"><input type="radio" name="q'+i+'" value="'+j+'"><span></span></label>').join('')+
+    '<div class="fb" id="fb'+i+'"></div>';
+  d.querySelector('.qt').textContent=item.q;
+  [...d.querySelectorAll('.opt')].forEach((l,j)=>{
+    l.querySelector('span').textContent=item.o[j];
+    l.querySelector('input').onchange=()=>{
+      picks[i]=j;
+      [...d.querySelectorAll('.opt')].forEach(x=>x.classList.remove('pick'));
+      l.classList.add('pick');
+      document.getElementById('tally').textContent=Object.keys(picks).length+' of 20 answered';
+    };
+  });
+  qEl.appendChild(d);
+});
+document.getElementById('submit').onclick=()=>{
+  let n=0;
+  Q.forEach((item,i)=>{
+    const box=document.getElementById('q'+i),fb=document.getElementById('fb'+i);
+    const ok=picks[i]===item.a;if(ok)n++;
+    box.classList.remove('right','wrong');box.classList.add(ok?'right':'wrong');
+    fb.classList.add('show');
+    fb.textContent=(ok?'CORRECT - ':'MISSED - ')+item.f;
+  });
+  const pass=n>=17;
+  document.getElementById('result').innerHTML='<div class="score">'+
+    '<div class="bignum">'+n+'<span style="font-size:1.2rem;color:#0A0A0A">/20 &middot; '+Math.round(n/20*100)+'%</span></div>'+
+    '<h4 style="margin-top:10px">'+(pass?'Certified - you can take live calls':'Not passing - 17 correct required')+'</h4>'+
+    '<p>'+(pass?'Read every missed answer above, then clear five graded practice calls - including THE TRAP - before you dial anything real.':'Go back through the modules you missed and retake this. No live calls until you clear 17.')+'</p></div>';
+  document.getElementById('result').scrollIntoView({behavior:'smooth',block:'center'});
+};
+</script>
+</body>
+</html>

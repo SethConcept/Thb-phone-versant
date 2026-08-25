@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { SELLER_BRAND } from "@/lib/academy";
 import { LEARN_MODULES, getModule } from "@/lib/modules";
 import { quizForClient } from "@/lib/quizzes";
+import { DISPO_MODULES, getDispoModule, dispoQuizForClient, DISPO_BRAND } from "@/lib/dispo";
 import { pathState } from "@/lib/progress";
 import { isAdminPreview } from "@/lib/admin-preview";
 import Quiz from "./quiz";
@@ -14,7 +15,6 @@ export default async function ModulePage({
   params: Promise<{ token: string; module: string }>;
 }) {
   const { token, module: moduleId } = await params;
-  const mod = getModule(moduleId);
 
   const db = supabaseAdmin();
   const { data: trainee } = await db
@@ -23,7 +23,14 @@ export default async function ModulePage({
     .eq("interview_token", token)
     .single();
 
-  if (!trainee || trainee.mode !== "training" || !mod)
+  const isDispo = trainee?.mode === "dispo";
+  // Each mode has its own track: Versant (m1..m8) or dispositions (d1..d7).
+  const modules = isDispo ? DISPO_MODULES : LEARN_MODULES;
+  const mod = isDispo ? getDispoModule(moduleId) : getModule(moduleId);
+  const brand = isDispo ? DISPO_BRAND : SELLER_BRAND;
+  const subtitle = isDispo ? "The Desk · Dispositions" : "Phone Academy";
+
+  if (!trainee || !["training", "dispo"].includes(trainee.mode) || !mod)
     return (
       <div className="candidate-bg">
         <main className="card candidate-card fade-in">
@@ -38,32 +45,32 @@ export default async function ModulePage({
     .select("module_id, quiz_score, quiz_total, quiz_passed, drill_passed")
     .eq("candidate_id", trainee.id);
 
-  const state = pathState(rows ?? []);
+  const state = pathState(rows ?? [], modules);
   const preview = await isAdminPreview();
   const unlockAll = preview || trainee.skip_modules;
   const canView = unlockAll || state.unlocked(moduleId);
   const row = state.byModule[moduleId];
   const quizPassed = !!row?.quiz_passed;
-  const isLast = mod.id === LEARN_MODULES[LEARN_MODULES.length - 1].id;
-  const nextModule = LEARN_MODULES[mod.num] ?? null; // num is 1-based → next index
+  const isLast = mod.id === modules[modules.length - 1].id;
+  const nextModule = modules[mod.num] ?? null; // num is 1-based → next index
 
-  const doneCount = LEARN_MODULES.filter((m) => state.moduleComplete(m.id)).length;
+  const doneCount = modules.filter((m) => state.moduleComplete(m.id)).length;
 
   return (
     <div className="learn-shell">
       <aside className="learn-rail">
         <div className="learn-brand">
-          {SELLER_BRAND}
-          <small>Phone Academy · {trainee.full_name}</small>
+          {brand}
+          <small>{subtitle} · {trainee.full_name}</small>
         </div>
         <div className="learn-progressbar" aria-hidden>
-          <i style={{ width: `${Math.round((doneCount / LEARN_MODULES.length) * 100)}%` }} />
+          <i style={{ width: `${Math.round((doneCount / modules.length) * 100)}%` }} />
         </div>
         <p className="small muted" style={{ margin: "4px 14px 10px" }}>
-          {doneCount} of {LEARN_MODULES.length} modules complete
+          {doneCount} of {modules.length} modules complete
         </p>
         <nav>
-          {LEARN_MODULES.map((m) => {
+          {modules.map((m) => {
             const open = unlockAll || state.unlocked(m.id);
             const complete = state.moduleComplete(m.id);
             const cls = `learn-navitem ${m.id === moduleId ? "on" : ""} ${!open ? "locked" : ""}`;
@@ -83,12 +90,14 @@ export default async function ModulePage({
               </span>
             );
           })}
-          <div className="learn-navitem learn-navtest">
-            <Link href={`/learn/${token}/drills`} className="learn-testlink">
-              🎙 Drill room <span className="small muted">(optional)</span>
-            </Link>
-          </div>
-          <div className={`learn-navitem learn-navtest ${state.allComplete || unlockAll ? "" : "locked"}`} style={{ borderTop: "none", marginTop: 0, paddingTop: 0 }}>
+          {!isDispo && (
+            <div className="learn-navitem learn-navtest">
+              <Link href={`/learn/${token}/drills`} className="learn-testlink">
+                🎙 Drill room <span className="small muted">(optional)</span>
+              </Link>
+            </div>
+          )}
+          <div className={`learn-navitem learn-navtest ${state.allComplete || unlockAll ? "" : "locked"}`} style={isDispo ? undefined : { borderTop: "none", marginTop: 0, paddingTop: 0 }}>
             {state.allComplete || unlockAll ? (
               <Link href={`/interview/${token}`} className="learn-testlink">
                 🏁 Certification calls — unlocked
@@ -111,7 +120,7 @@ export default async function ModulePage({
         ) : (
           <>
             <div className="learn-modhead">
-              <div className="learn-kicker">Module {mod.num} of {LEARN_MODULES.length} · {mod.kicker}</div>
+              <div className="learn-kicker">Module {mod.num} of {modules.length} · {mod.kicker}</div>
               <h1>{mod.title}</h1>
               <p className="learn-lede">{mod.lede}</p>
             </div>
@@ -126,7 +135,7 @@ export default async function ModulePage({
               <p className="small muted" style={{ marginTop: 6 }}>
                 Four questions, pass at three. Retake as many times as you like — your best score counts.
               </p>
-              <Quiz token={token} moduleId={moduleId} questions={quizForClient(moduleId)} />
+              <Quiz token={token} moduleId={moduleId} questions={isDispo ? dispoQuizForClient(moduleId) : quizForClient(moduleId)} />
             </section>
 
             <div className="row" style={{ marginTop: 20, justifyContent: "space-between" }}>

@@ -6,16 +6,22 @@ import { supabaseServer } from "@/lib/supabase/server";
 async function addTrainee(formData: FormData) {
   "use server";
   const supabase = await supabaseServer();
-  const mode = formData.get("mode") === "sales" ? "sales" : "training";
+  const rawMode = String(formData.get("mode") || "");
+  const mode = ["sales", "dispo"].includes(rawMode) ? rawMode : "training";
   const { error } = await supabase.from("candidates").insert({
     full_name: String(formData.get("full_name") || "").trim(),
     phone: String(formData.get("phone") || "").trim() || null,
     email: String(formData.get("email") || "").trim() || null,
-    role_applied: mode === "training" ? "Versant certification" : "Sales practice",
+    role_applied:
+      mode === "training"
+        ? "Versant certification"
+        : mode === "dispo"
+          ? "Dispositions certification"
+          : "Sales practice",
     mode,
     difficulty: mode === "sales" && formData.get("difficulty") === "hard" ? "hard" : "easy",
-    // training links never expire — certification takes repeated runs
-    ...(mode === "training" ? { token_expires_at: null } : {}),
+    // training/dispo links never expire — certification takes repeated runs
+    ...(mode !== "sales" ? { token_expires_at: null } : {}),
   });
   if (error) throw new Error(error.message);
   revalidatePath("/admin");
@@ -43,7 +49,8 @@ export default async function AdminPage({
 
   const { mode: modeFilter } = await searchParams;
   let query = supabase.from("candidates").select("*").order("created_at", { ascending: false });
-  if (modeFilter === "training" || modeFilter === "sales") query = query.eq("mode", modeFilter);
+  if (modeFilter && ["training", "sales", "dispo"].includes(modeFilter))
+    query = query.eq("mode", modeFilter);
   const { data: trainees } = await query;
 
   const base = process.env.NEXT_PUBLIC_APP_URL || "";
@@ -65,10 +72,14 @@ export default async function AdminPage({
         <div className="row">
           {tab("/admin", "All", !modeFilter)}
           {tab("/admin?mode=training", "🎧 Versant", modeFilter === "training")}
+          {tab("/admin?mode=dispo", "🏷 Dispo", modeFilter === "dispo")}
           {tab("/admin?mode=sales", "📞 Sales practice", modeFilter === "sales")}
           <span className="pill pill-gray">{(trainees ?? []).length}</span>
           <a href="/academy.html" target="_blank" className="pill pill-blue" style={{ textDecoration: "none", padding: "6px 14px" }}>
             📖 Academy
+          </a>
+          <a href="/dispo.html" target="_blank" className="pill pill-blue" style={{ textDecoration: "none", padding: "6px 14px" }}>
+            📖 Dispo course
           </a>
         </div>
       </div>
@@ -81,8 +92,9 @@ export default async function AdminPage({
           <input name="full_name" placeholder="Full name" required className="input" style={{ flex: 2, minWidth: 160 }} />
           <input name="email" placeholder="Email (optional)" className="input" style={{ flex: 2, minWidth: 160 }} />
           <input name="phone" placeholder="Phone (optional)" className="input" style={{ flex: 1, minWidth: 120 }} />
-          <select name="mode" className="input" style={{ width: "auto" }} defaultValue={modeFilter === "sales" ? "sales" : "training"}>
+          <select name="mode" className="input" style={{ width: "auto" }} defaultValue={["sales", "dispo"].includes(modeFilter ?? "") ? modeFilter : "training"}>
             <option value="training">🎧 Versant certification</option>
+            <option value="dispo">🏷 Dispositions certification</option>
             <option value="sales">📞 Sales practice call</option>
           </select>
           <select name="difficulty" className="input" style={{ width: "auto" }} title="Difficulty (sales practice only)">
@@ -92,7 +104,7 @@ export default async function AdminPage({
           <button className="btn">Add + generate link</button>
         </form>
         <p className="small muted" style={{ margin: "8px 0 0" }}>
-          Versant links never expire — trainees retake until they certify. Difficulty applies to sales practice only.
+          Versant and dispo links never expire — trainees retake until they certify. Difficulty applies to sales practice only.
         </p>
       </div>
 
@@ -113,7 +125,11 @@ export default async function AdminPage({
                 <td style={{ fontWeight: 600 }}>{c.full_name}</td>
                 <td>
                   <span className={`pill ${c.mode === "sales" ? "pill-blue" : "pill-gray"}`}>
-                    {c.mode === "sales" ? `📞 ${c.difficulty === "hard" ? "hard" : "easy"} John` : "🎧 Versant"}
+                    {c.mode === "sales"
+                      ? `📞 ${c.difficulty === "hard" ? "hard" : "easy"} John`
+                      : c.mode === "dispo"
+                        ? "🏷 Dispo"
+                        : "🎧 Versant"}
                   </span>
                 </td>
                 <td>
@@ -121,9 +137,9 @@ export default async function AdminPage({
                 </td>
                 <td style={{ maxWidth: 320 }}>
                   <code className="linkbox">
-                    {c.mode === "training"
-                      ? `${base}/learn/${c.interview_token}`
-                      : `${base}/interview/${c.interview_token}`}
+                    {c.mode === "sales"
+                      ? `${base}/interview/${c.interview_token}`
+                      : `${base}/learn/${c.interview_token}`}
                   </code>
                 </td>
                 <td>

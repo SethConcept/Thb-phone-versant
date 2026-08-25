@@ -6,6 +6,8 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { SCORING_MODEL } from "@/lib/models";
 import { salesScoringPrompt } from "@/lib/sales-prompts";
 import { versantScoringPrompt, versantVerdict } from "@/lib/versant-prompts";
+import { dispoScoringPrompt, dispoVerdict } from "@/lib/dispo-prompts";
+import { DISPO_MAX_SCORE } from "@/lib/dispo";
 import { DRILL_CRITERIA } from "@/lib/academy";
 
 // Admin-only: send a session transcript to Gemini with the matching rubric
@@ -37,7 +39,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No transcript to score" }, { status: 404 });
 
   const isTraining = (interview as any).candidates?.mode === "training";
-  if (isTraining && !interview.exam_meta)
+  const isDispo = (interview as any).candidates?.mode === "dispo";
+  if ((isTraining || isDispo) && !interview.exam_meta)
     return NextResponse.json(
       { error: "Missing exam draw on this attempt — cannot grade it" },
       { status: 409 }
@@ -53,7 +56,9 @@ export async function POST(req: Request) {
     .map((t) =>
       isTraining
         ? `${t.role === "agent" ? "EXAMINER/SELLER" : "TRAINEE"}: ${t.text}`
-        : `${t.role === "agent" ? "JOHN (seller)" : "TRAINEE (agent)"}: ${t.text}`
+        : isDispo
+          ? `${t.role === "agent" ? "AGENT" : "REP"}: ${t.text}`
+          : `${t.role === "agent" ? "JOHN (seller)" : "TRAINEE (agent)"}: ${t.text}`
     )
     .join("\n");
 
@@ -64,7 +69,9 @@ export async function POST(req: Request) {
       model: process.env.SCORING_MODEL || SCORING_MODEL,
       contents: isTraining
         ? versantScoringPrompt(transcriptText, interview.exam_meta)
-        : salesScoringPrompt(transcriptText),
+        : isDispo
+          ? dispoScoringPrompt(transcriptText, interview.exam_meta)
+          : salesScoringPrompt(transcriptText),
     });
   } catch (e: any) {
     return NextResponse.json(
@@ -83,7 +90,22 @@ export async function POST(req: Request) {
   let row: Record<string, unknown>;
   let verdict: string;
 
-  if (isTraining) {
+  if (isDispo) {
+    // Dispo call — 12-item rubric, boundary breaches are automatic fails.
+    parsed.kind = "dispo"; // discriminator for the admin score renderer
+    const v = dispoVerdict(parsed);
+    verdict = v.verdict;
+    row = {
+      interview_id: interviewId,
+      detail: parsed,
+      knockout: v.breaches.length > 0,
+      knockout_reason: v.reason || null,
+      verdict,
+      scored_by: "ai",
+      notes: [parsed.coaching_note, parsed.summary_note].filter(Boolean).join(" · "),
+      completeness: v.total, // rubric points out of DISPO_MAX_SCORE
+    };
+  } else if (isTraining) {
     // Certification call — deterministic verdict, the code decides.
     const v = versantVerdict(parsed);
     verdict = v.verdict;
@@ -148,5 +170,6 @@ export async function POST(req: Request) {
     ...(isTraining && !isDrill
       ? { call: `${(row as any).completeness}/${DRILL_CRITERIA.length}` }
       : {}),
+    ...(isDispo ? { call: `${(row as any).completeness}/${DISPO_MAX_SCORE}` } : {}),
   });
 }

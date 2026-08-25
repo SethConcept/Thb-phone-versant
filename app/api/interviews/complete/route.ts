@@ -4,6 +4,8 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { SCORING_MODEL } from "@/lib/models";
 import { versantScoringPrompt, versantVerdict } from "@/lib/versant-prompts";
 import { resolveDraw } from "@/lib/academy";
+import { dispoScoringPrompt, dispoVerdict } from "@/lib/dispo-prompts";
+import { getDispoAgent, DISPO_MAX_SCORE } from "@/lib/dispo";
 
 // Called by the session page when it ends (complete or aborted).
 // Saves transcript + audio recording, marks the trainee as interviewed.
@@ -31,8 +33,10 @@ export async function POST(req: Request) {
   if (interview.completed) return NextResponse.json({ error: "Already completed" }, { status: 409 });
 
   const isTraining = (interview as any).candidates?.mode === "training";
+  const isDispo = (interview as any).candidates?.mode === "dispo";
   const isDrill = interview.exam_meta?.kind === "drill";
   const isCert = isTraining && !isDrill && !!interview.exam_meta;
+  const isDispoCall = isDispo && interview.exam_meta?.kind === "dispo";
 
   let audio_url: string | null = null;
   if (audio && audio.size > 0) {
@@ -72,7 +76,7 @@ export async function POST(req: Request) {
     .from("candidates")
     .update({
       status: "interviewed",
-      ...(!isTraining && (attemptsUsed ?? 0) >= 3
+      ...(!isTraining && !isDispo && (attemptsUsed ?? 0) >= 3
         ? { token_expires_at: new Date().toISOString() }
         : {}),
     })
@@ -82,6 +86,53 @@ export async function POST(req: Request) {
   // call itself. Saved (transcript + audio) for admin review only.
   if (isDrill) {
     return NextResponse.json({ ok: true, drill: { practice: true } });
+  }
+
+  // ---- Dispo-call auto-grading (12-item rubric, breaches = fail) ----
+  if (isDispoCall && transcript.length >= 4) {
+    const transcriptText = transcript
+      .map((t) => `${t.role === "agent" ? "AGENT" : "REP"}: ${t.text}`)
+      .join("\n");
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+      const result = await ai.models.generateContent({
+        model: process.env.SCORING_MODEL || SCORING_MODEL,
+        contents: dispoScoringPrompt(transcriptText, interview.exam_meta),
+      });
+      const parsed = JSON.parse((result.text ?? "").replace(/```json|```/g, "").trim());
+      parsed.kind = "dispo"; // discriminator for the admin score renderer
+      const v = dispoVerdict(parsed);
+
+      await db.from("scores").insert({
+        interview_id: interviewId,
+        detail: parsed,
+        knockout: v.breaches.length > 0,
+        knockout_reason: v.verdict === "PASS" ? null : v.reason,
+        verdict: v.verdict,
+        scored_by: "ai",
+        notes: [parsed.coaching_note, parsed.summary_note].filter(Boolean).join(" · "),
+        completeness: v.total,
+      });
+      await db.from("candidates").update({ status: "scored" }).eq("id", interview.candidate_id);
+
+      return NextResponse.json({
+        ok: true,
+        cert: {
+          graded: true,
+          pass: v.verdict === "PASS",
+          reason: v.reason,
+          summary: `scored ${v.total}/${DISPO_MAX_SCORE}`,
+          coaching: parsed.coaching_note || "",
+          picked: !!interview.exam_meta.picked,
+          who: getDispoAgent(interview.exam_meta.agent)?.label ?? "",
+        },
+      });
+    } catch {
+      return NextResponse.json({
+        ok: true,
+        cert: { graded: false, pass: false, reason: "", summary: "", coaching: "" },
+      });
+    }
   }
 
   // ---- Certification-call auto-grading ----
