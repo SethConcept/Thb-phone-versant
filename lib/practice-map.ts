@@ -38,9 +38,24 @@ const RULES: Rule[] = [
     because: "they won't volunteer their reason — you have to draw it out",
   },
   {
+    match: /as.?is|inspect|retrade|lower the (price|offer)|went down|contingen/i,
+    personas: ["arthur"],
+    because: "they take the as-is question apart — practice answering it instead of transferring",
+  },
+  {
+    match: /trust|probate|power of attorney|\bpoa\b|estate|sibling|heir|beneficiar/i,
+    personas: ["warren", "arthur"],
+    because: "nobody on the call can sign on their own — practice finding the signer first",
+  },
+  {
     match: /decision|spouse|owner|authority|who else|title/i,
-    personas: ["yvette", "renee"],
+    personas: ["yvette", "renee", "warren"],
     because: "more than one person has to say yes — practice finding that out early",
+  },
+  {
+    match: /repeat|confirm|clarif|misheard|talked over|interrupt|too fast|stack/i,
+    personas: ["minh"],
+    because: "a hard line and a second language — practice slowing down and confirming back",
   },
   {
     match: /objection|pressure|pushback|argu|calm|tone|natural|rapport|acknowledg/i,

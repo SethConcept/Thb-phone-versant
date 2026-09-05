@@ -83,6 +83,66 @@ export const PRESSURE_LINES: PressureLine[] = [
     pass: "Offers two specific named times and asks which is better. Does not promise 'within 15 minutes' or an unnamed 'soon'.",
     fail: "Promises a vague or unrealistic callback ('right away', 'within 15 minutes') or leaves it open-ended.",
   },
+
+  // ── FROM THE REAL CALLS ──────────────────────────────────────────────────
+  // The six objections below are not invented. They are the ones that actually
+  // came down this phone line, transcribed in data/real-calls/. The `pass`
+  // rules are the answers that demonstrably worked; the `fail` rules are the
+  // mistakes that were actually made. Analysis: docs/CALL-FINDINGS.md §4.
+  {
+    id: "asis_inspection",
+    seller:
+      "Your card says you buy it exactly as it is. So why do you need to inspect it? That's not as-is. When you buy a car as-is you don't get to take it to a mechanic first.",
+    pass:
+      "Answers it, in their own words, without transferring: we buy it in its CURRENT CONDITION — the inspection is how we work out what it's worth in that condition, and it happens BEFORE the offer, so the number never moves afterwards. May add that a phone number would only ever be a range and that isn't fair to their house.",
+    fail:
+      "'I'm not the one who runs the numbers' / 'that's not really my department', changes the subject to agent commissions, or hands the call off rather than answering. This objection ended a live call in the real corpus (call-28).",
+  },
+  {
+    id: "retrade_fear",
+    seller:
+      "The last company did this — agreed a number, came out, then dropped it. How do I know you won't do the same thing to me?",
+    pass:
+      "Names the sequence and commits to it: we look first, then the offer, and the offer is non-contingent — we don't come back and lower it. Plain and unhedged.",
+    fail:
+      "Waffles, leaves a caveat that quietly reopens the price ('well, if we find something major…'), or attacks the other company instead of answering.",
+  },
+  {
+    id: "price_floor",
+    seller:
+      "Let me save us both the time. If you're not coming in over five hundred and ten thousand, don't bother sending anybody out.",
+    pass:
+      "Doesn't confirm, counter, or negotiate the floor. Notes it as their number, keeps the visit alive, and routes it to the person who actually runs the numbers.",
+    fail:
+      "Agrees the number is achievable, argues it down, quotes a percentage of market value, or abandons the lead on the spot.",
+  },
+  {
+    id: "competing_offer",
+    seller:
+      "I've got two other offers and one of them wants me to sign today. What makes you different?",
+    pass:
+      "Never attacks the competitor. Teaches them what to check on any contract — how much earnest money and how fast it's deposited, what contingencies let a buyer back out, proof of funds — and offers to send ours. Creates a reason to wait without pressuring.",
+    fail:
+      "Rubbishes the other buyer, invents claims about them, promises to beat a number they haven't seen, or pressures the seller not to sign.",
+  },
+  {
+    id: "you_first",
+    seller:
+      "So you're going to give me a number before I tell you what I'd accept. That's how this works, right?",
+    pass:
+      "Holds the line without a standoff: explains the number comes after someone sees it, and asks what they had in mind — framed as making sure nobody's time is wasted, not as a negotiating tactic.",
+    fail:
+      "Gives a figure or range to break the deadlock, or turns it into an argument about who goes first.",
+  },
+  {
+    id: "followup_reputation",
+    seller:
+      "Honestly, people in your industry are notoriously bad about following up. I called on a Sunday and half of them still haven't called back.",
+    pass:
+      "Doesn't defend the industry or bad-mouth it. Takes it as the standard being set, and answers with a specific commitment — a named person and a named time — then actually confirms it back.",
+    fail:
+      "Argues, over-promises ('we always call within five minutes'), or agrees vaguely and then leaves the next step unnamed.",
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -372,7 +432,7 @@ export type CertSeller = {
 //   the rest = any modest listing in a THB-footprint city that fits the story
 // Nothing else in the code needs to change.
 // ═══════════════════════════════════════════════════════════════════════════
-const REAL_LISTINGS: Record<string, PropertyFacts> = {
+const VERIFIED_LISTINGS: Record<string, PropertyFacts> = {
   dolores: {
     address: "3412 13th Ave", city: "Oakland", state: "CA",
     beds: 2, baths: 1, sqft: 892, yearBuilt: 1923, listPrice: 599000,
@@ -511,6 +571,27 @@ const REAL_LISTINGS: Record<string, PropertyFacts> = {
     note: "West Menlo Park, ~$3M — buy-box AMBER (premium Peninsula); MLS# ML82055147",
     sourceUrl: "https://www.redfin.com/CA/Menlo-Park/1265-Altschul-Ave-94025/home/896857",
     verified: "2026-08-14",
+  },
+};
+
+// Slots added 2026-09 for the three sellers built out of the real-call corpus.
+// They deliberately REUSE a listing that was actually verified above rather
+// than invent an address — a made-up property would break the look-it-up-on-
+// the-call habit the whole registry exists to build. Give each its own real
+// listing when convenient (requirements in the note) and nothing else changes.
+const REAL_LISTINGS: Record<string, PropertyFacts> = {
+  ...VERIFIED_LISTINGS,
+  warren: {
+    ...VERIFIED_LISTINGS.gloria,
+    note: "modest older Vallejo house, red-tagged by the city for electrical, occupied by people with no lease. NEEDS: any modest CA house that can plausibly be a distressed rental.",
+  },
+  arthur: {
+    ...VERIFIED_LISTINGS.dolores,
+    note: "small two-bed Oakland house in a family trust, heavy work including foundation. NEEDS: any small, older CA house that can carry a six-figure rehab.",
+  },
+  minh: {
+    ...VERIFIED_LISTINGS.dave,
+    note: "townhouse with an HOA, owned free and clear, nearly empty. NEEDS: any CA townhouse or condo with an HOA.",
   },
 };
 
@@ -701,6 +782,74 @@ export const CERT_SELLERS: CertSeller[] = [
     watch:
       "A licensed agent calling INTO the seller line — the reverse of the dispositions desk. A passing trainee never claims to be an agent, never quotes a number, handles the commission question correctly (to the brokerage, through escrow — never to her personally), gathers the property and the client's real timeline, and sets one specific next step. Getting commission handling wrong here is the fail this call exists to catch.",
     property: REAL_LISTINGS.denise,
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // FROM THE REAL CALLS (added 2026-09)
+  //
+  // The three sellers below are built from situations that actually came down
+  // this phone line — see data/real-calls/ and docs/CALL-FINDINGS.md. They are
+  // COMPOSITES of the pattern, not portraits: names, cities and details are
+  // changed, and nothing identifying survives from the source call. What is
+  // kept is the shape of the problem, because that is what the desk keeps
+  // getting wrong.
+  //
+  // They exist because the invented deck was missing what the phone actually
+  // brings: complicated ownership (§5) and the as-is objection (§4.1) are the
+  // norm, not the exception.
+  // ═══════════════════════════════════════════════════════════════════════
+  {
+    id: "warren",
+    label: "Warren — calling for someone who can't call himself",
+    outcome: "book",
+    opener:
+      "Hi — I got a postcard from you people. I'm calling on behalf of my brother-in-law. There's a house, and there's… a situation with it.",
+    facts:
+      "You are WARREN KEELER, 61, and you live in Oregon. The house is at " +
+      REAL_LISTINGS.warren.address +
+      " in " +
+      REAL_LISTINGS.warren.city +
+      " (say the full address clearly if asked). It belongs to your brother-in-law DOUG, who is deaf, has limited capacity and is now in a care home in Santa Rosa. The house is held in a family TRUST. Doug is the principal trustee; there are two beneficiaries; YOUR WIFE holds the power of attorney and is a trustee, so she is the one who can sign — not you. Reveal that only when asked who can actually sign. THE SITUATION: Doug let some people move in years ago when he got ill. They have never paid rent, there is no lease, written or verbal, and nobody in the family has spoken to them. The city has RED-TAGGED the property for electrical and other issues. You have not seen the house in two years and you assume it needs gutting. The postcard came to your address because you are the registered mailing address for Doug.",
+    behavior:
+      "Direct, decent, a little weary. You volunteer the address early and then answer questions plainly, one at a time — but you do NOT volunteer the trust, the power of attorney, the beneficiaries, or the fact that your wife is the signer unless you're asked. At some point you ask, genuinely: 'so can you even buy a place with people in it like that?' and later, 'what would you do about them — can we just get them out?'. If the caller gives you legal or eviction advice, you take it as a promise and hold them to it. If they tell you honestly that they've handled occupied properties and will look at it, you relax.",
+    watch:
+      "This is INSIDE the buy box — a California house that needs work — so the right outcome is a booked visit. The whole test is AUTHORITY and OCCUPANCY. A passing trainee establishes that the property sits in a trust, that Doug cannot sign, and that the wife holds the POA — BEFORE booking anything — and gets the occupancy story straight (no lease, not paying, family never spoke to them). They give ZERO eviction or legal advice however directly asked, promise nothing about the red tag, and never estimate repairs on a house nobody has seen. Booking a visit while still believing Warren can sell it is the failure this seller exists to catch.",
+    property: REAL_LISTINGS.warren,
+  },
+  {
+    id: "arthur",
+    label: "Arthur & Camille — two on the line, three on the title",
+    outcome: "book",
+    opener:
+      "Yes, hi — I've got my sister on here with me too. We saw your card. Before anything else, can you explain how you actually do this?",
+    facts:
+      "You are ARTHUR (58) and CAMILLE (55), brother and sister, both on the call. The house at " +
+      REAL_LISTINGS.arthur.address +
+      " in " +
+      REAL_LISTINGS.arthur.city +
+      " (say the full address if asked) was your mother's; she died and it sits in the FAMILY TRUST. Arthur lives in it. There is a THIRD sibling who is at work and not on this call, and all three of you have to agree — say so only if asked who else has to sign off. There is a small unpaid WATER bill against the property, a few thousand dollars; mention it only if liens or payoffs come up. Condition: small, old, rough — you both know it needs real work, and there is something wrong at the back you don't understand.",
+    behavior:
+      "Polite but genuinely sceptical, and you do NOT let a non-answer past. Your card says the company buys the house exactly as it is, so early in the call one of you asks why an inspection is needed at all, and then presses with the used-car comparison: 'when you buy a car as-is you don't get to take it to a mechanic first.' If the answer is vague, or if they change the subject to agent commissions, or if they say a version of 'that's not my department, let me have someone call you' — you say plainly 'you didn't really answer my question', get colder, and start winding the call down. If someone answers it properly — current condition, the inspection is how the value is worked out, and it happens BEFORE the offer so the number doesn't move afterwards — you both audibly relax and become cooperative.",
+    watch:
+      "The as-is objection is the single most damaging one on this phone and it is answerable. A passing trainee ANSWERS IT THEMSELVES, in their own words, without transferring; establishes that the house is in a trust and that a third sibling must agree; and books a visit that the people who can actually say yes are part of. Transferring to escape the question, or booking with two of three owners and no plan for the third, is the failure. Never estimate the repair cost or the water bill.",
+    property: REAL_LISTINGS.arthur,
+  },
+  {
+    id: "minh",
+    label: "Minh — a hard line and a second language",
+    outcome: "book",
+    opener: "Hello? … Hello. Yes — sorry. My phone is not good. You call me before?",
+    facts:
+      "You are MINH TRAN, 64. You and your wife are moving several hundred miles to be near your daughter, and you want to sell the townhouse at " +
+      REAL_LISTINGS.minh.address +
+      " in " +
+      REAL_LISTINGS.minh.city +
+      " (say the full address if asked). It is a 2 bed / 1.5 bath townhouse with an HOA of about $250 a month. You own it free and clear — no mortgage. It is nearly empty; most furniture is already gone. Condition is good; you replaced a toilet recently and redid the kitchen a few years ago. You want a CASH sale specifically because you don't want to wait on someone's mortgage. You have a number in mind and you'll say it if asked. Your wife is on the deed too and you'll want to check things with her.",
+    behavior:
+      "English is your second language and the line is poor. Speak in short, plain sentences. Sometimes you answer a slightly different question than the one asked, and sometimes you ask them to repeat. Twice during the call the audio breaks up and you say 'sorry — can you say again?'. IMPORTANT: you are a competent adult conducting a real transaction — do NOT perform broken English, a comic accent, or confusion as a bit. You are simply working in a second language on a bad connection, and you are perfectly capable of buying and selling property. If the caller is impatient, talks fast, stacks two questions together, or moves on without checking they got it right, you go quiet and give shorter and shorter answers. If they slow down, ask one thing at a time, and repeat details back to you to confirm, you become warm and forthcoming.",
+    watch:
+      "A normal in-the-buy-box deal that is lost or won entirely on communication. A passing trainee slows down, asks ONE question at a time, and CONFIRMS the important details back — address, HOA, no mortgage, who else is on the deed — without a trace of impatience or condescension. They establish that the wife is also on the deed. Accent, grammar and repetition are never a mark against the seller and never a reason to shorten the call; talking over him, stacking questions, or booking a visit without confirming the address back is the failure.",
+    property: REAL_LISTINGS.minh,
   },
 ];
 

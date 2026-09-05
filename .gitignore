@@ -7,3 +7,10 @@ out/
 .vercel
 *.tsbuildinfo
 next-env.d.ts
+
+# Un-redacted call pulls from REI BlackBook. These carry real seller names,
+# phone numbers, addresses and medical details — they never go in git.
+# Only data/real-calls/ (the redacted corpus) is committed.
+raw-calls/
+cookies.txt
+*.cookies

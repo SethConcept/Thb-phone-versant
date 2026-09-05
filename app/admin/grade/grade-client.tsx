@@ -7,9 +7,29 @@ const SAMPLE = `REP: Thank you for calling Twin Home Buyer, this is Thea. This c
 SELLER: Yes, I saw your commercial. I have a house in Richmond I've been thinking about selling.
 REP: …`;
 
+type Role = "intake" | "acquisition";
+
+// The two seats on this phone are graded against different rubrics — the desk
+// must never quote a number, acquisitions has to. Picking the wrong one gives
+// a meaningless grade, so it sits at the top of the form, not hidden in a
+// dropdown. See docs/CALL-FINDINGS.md §1.
+const ROLES: { id: Role; name: string; hint: string }[] = [
+  {
+    id: "intake",
+    name: "Intake desk",
+    hint: "Answered the line, qualified, booked the visit. Never gives a number.",
+  },
+  {
+    id: "acquisition",
+    name: "Acquisitions",
+    hint: "Took the handoff after the visit. Presents the offer and the math behind it.",
+  },
+];
+
 export default function GradeClient() {
   const [transcript, setTranscript] = useState("");
   const [context, setContext] = useState("");
+  const [role, setRole] = useState<Role>("intake");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [report, setReport] = useState<ReportData | null>(null);
@@ -23,7 +43,7 @@ export default function GradeClient() {
       const res = await fetch("/api/grade-transcript", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript, context }),
+        body: JSON.stringify({ transcript, context, role }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Grading failed");
@@ -40,6 +60,25 @@ export default function GradeClient() {
   return (
     <>
       <form onSubmit={grade} className="card" style={{ marginTop: 14 }}>
+        <fieldset className="seat-pick">
+          <legend className="small muted">Which seat was on this call?</legend>
+          {ROLES.map((r) => (
+            <label key={r.id} className={`seat ${role === r.id ? "on" : ""}`}>
+              <input
+                type="radio"
+                name="role"
+                value={r.id}
+                checked={role === r.id}
+                onChange={() => setRole(r.id)}
+              />
+              <span>
+                <strong>{r.name}</strong>
+                <em className="small muted">{r.hint}</em>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+
         <label className="small muted" style={{ display: "block", marginBottom: 6 }}>
           Paste the transcript. Label each turn — <code>REP:</code> and <code>SELLER:</code> is ideal, but any
           consistent labels work.

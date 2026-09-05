@@ -120,6 +120,24 @@ a { color: var(--brand-ink); }
 .rpt-cols li { margin-bottom: 5px; }
 .rpt-breach { color: var(--red); }
 .rpt-coach { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--blue-bg); font-size: 13.5px; }
+/* Seat picker on the transcript grader — two cards, not a dropdown, because
+   picking the wrong seat produces a meaningless grade. */
+.seat-pick { border: 0; padding: 0; margin: 0 0 14px; }
+.seat-pick legend { padding: 0; margin-bottom: 7px; }
+.seat-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.seat-pick legend { grid-column: 1 / -1; }
+.seat { display: flex; gap: 9px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; }
+.seat.on { border-color: var(--blue); background: var(--blue-bg); }
+.seat input { margin-top: 3px; }
+.seat strong { display: block; font-size: 13.5px; }
+.seat em { font-style: normal; display: block; margin-top: 2px; line-height: 1.35; }
+
+/* Policy gaps belong to the company, not the rep — deliberately styled as a
+   neutral notice, never as a red mark against the person on the call. */
+.rpt-policy { margin-top: 12px; padding: 10px 12px; border-radius: 8px; border: 1px dashed var(--line); font-size: 13px; }
+.rpt-policy strong { display: block; font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+.rpt-policy ul { margin: 0; padding-left: 18px; }
+.rpt-policy li { margin-bottom: 4px; }
 
 .meter { height: 16px; background: #e7ebef; border-radius: 999px; overflow: hidden; margin: 18px 0; }
 .meter > div { height: 100%; transition: width 0.08s linear; border-radius: 999px; }
@@ -520,6 +538,12 @@ a.learn-navitem:hover { background: var(--brand-soft); }
 .cr-role.me { color: var(--brand-ink); }
 .cr-say { overflow-wrap: anywhere; }
 
+/* Corpus reader: no recording behind these, so no timestamp column and
+   nothing to click through to. Taller, because they run to 60+ turns. */
+.cr-tr.no-ts { max-height: 60vh; }
+.cr-tr.no-ts .cr-turn { grid-template-columns: 58px minmax(0, 1fr); cursor: default; }
+.cr-tr.no-ts .cr-turn:hover { background: transparent; }
+
 @media (max-width: 980px) {
   .cr-wrap { grid-template-columns: 1fr; }
   .cr-list { position: static; }
@@ -532,6 +556,10 @@ a.learn-navitem:hover { background: var(--brand-soft); }
   .cr-turn { grid-template-columns: 40px minmax(0, 1fr); }
   .cr-turn .cr-role { grid-column: 2; padding-top: 0; }
   .cr-turn .cr-say { grid-column: 2; }
+  /* no-ts has no timestamp column, so the stacking above doesn't apply */
+  .cr-tr.no-ts .cr-turn { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .cr-tr.no-ts .cr-turn .cr-role,
+  .cr-tr.no-ts .cr-turn .cr-say { grid-column: 1; }
   .rpt-bar { grid-template-columns: 92px 1fr 48px; }
 }
 

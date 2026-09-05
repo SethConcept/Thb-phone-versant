@@ -35,12 +35,14 @@ count toward anything.
 ## The certification call (one realistic inbound call, ~5 min)
 
 No examiner, no sections. The line rings; the trainee answers with the
-mandatory open; the AI plays one of the 16 named situational sellers in
+mandatory open; the AI plays one of the 19 named situational sellers in
 `CERT_SELLERS` (all inbound from TV), dealt WITHOUT replacement so the
-first 16 calls cover the whole deck. Each seller carries an expected
-outcome: book (13 sellers), kind_no (Terri — mobile home; buy box:
+first 19 calls cover the whole deck. Each seller carries an expected
+outcome: book (16 sellers), kind_no (Terri — mobile home; buy box:
 California only, no manufactured homes), or escalate (Jonathan — Menlo
-Park estate; Juan's personal call, never the desk's). The draw also embeds
+Park estate; Juan's personal call, never the desk's). Three of the sellers
+(Warren, Arthur & Camille, Minh) are drawn from situations that actually
+came down the line — see `docs/CALL-FINDINGS.md`. The draw also embeds
 2 pressure lines + 2 seller questions (incl. the out-of-state Vegas condo
 test) woven in naturally. The call runs to a real ending. Auto-graded on
 completion; each pass counts toward the gate. The wider 24-persona deck
@@ -107,16 +109,50 @@ stay server-only). Structure mirrors Versant:
 ## Real-call grading (the THB Sales Standard)
 
 `lib/sales-standard.ts` is a SECOND rubric, for real recorded calls that
-have no persona and no answer key. Weighted per the ops spec and split in
-two on purpose: **call skill** (80 pts — rapport, motivation, qualification,
-price, objections, next step) is everything a recording can prove;
-**process compliance** (20 pts — response time, CRM routing, whether the
-follow-up happened) is RESERVED and not scored from audio, because it isn't
-in the audio. Weights are provisional until real game film replaces them.
+have no persona and no answer key. It is **role-aware**, because the corpus
+showed there are two jobs on this phone and one rubric could not grade both:
 
-`/admin/grade` scores any pasted transcript against it — no telephony
-needed. `/api/grade-transcript` is the same path a real-call monitoring
-pipeline would use.
+- **`intake`** — answers the line, qualifies, protects the number, books the
+  visit. Rapport 10 · motivation 12 · qualification 15 · authority 10 ·
+  price discipline 10 · objections 13 · next step 10. All seven hard fails
+  apply; quoting any figure is one of them.
+- **`acquisition`** — takes the handoff after the visit, presents the offer
+  WITH the arithmetic, holds the sequence, negotiates, closes. Rapport 8 ·
+  situation 10 · arithmetic 15 · sequence discipline 12 · authority 10 ·
+  objections 15 · next step 10. The price hard fails do NOT apply — quoting
+  is the job; the question is whether the number was justified.
+
+Both are 80 points of **call skill** (what a recording can prove) plus 20
+points of **process compliance** (response time, CRM routing, whether the
+follow-up happened) that stays RESERVED and unscored, because it isn't in
+the audio.
+
+Missing the recording disclosure is reported as a **policy alert** — shown
+separately, never scored against the individual — because no human in the
+corpus gives it. That is a company-level legal question, not a trainee's
+mistake. See `docs/CALL-FINDINGS.md` §2.
+
+`/admin/grade` scores any pasted transcript against either rubric — no
+telephony needed. `/api/grade-transcript` is the same path a real-call
+monitoring pipeline would use.
+
+## The real-call corpus (`data/real-calls/`)
+
+52 real Twin Home Buyer calls (2026-03 → 2026-09, 4.7 hours, 30 inbound),
+pulled from REI BlackBook and scrubbed of names, phone numbers, emails and
+street addresses. Cities and states stay — the buy box is geographic.
+This is the evidence the Sales Standard was calibrated against and the
+reason three certification sellers and six pressure lines exist.
+
+- `corpus.json` — machine-readable; `corpus.md` — readable side by side.
+- `/admin/calls` reads it in the app: pick a call, read it, grade it against
+  the seat that was actually on it.
+- `scripts/reibb-pull.mjs` re-pulls (needs a browser cookie jar),
+  `scripts/redact-calls.mjs` scrubs, `scripts/corpus-stats.mjs` re-measures
+  every number quoted in the findings. `npm run calls:pull|redact|stats`.
+- The redactor scans its own output and prints anything that still looks
+  like a person. **Never commit output with open flags.** Raw pulls are
+  gitignored.
 
 ## Progress tracking
 

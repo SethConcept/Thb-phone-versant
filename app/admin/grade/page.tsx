@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
-import { CALL_SKILL, CALL_SKILL_MAX, PROCESS_COMPLIANCE } from "@/lib/sales-standard";
+import {
+  ROLE_SKILL,
+  ROLE_LABEL,
+  ROLE_BLURB,
+  CALL_SKILL_MAX,
+  PROCESS_COMPLIANCE,
+  type CallRole,
+} from "@/lib/sales-standard";
 import GradeClient from "./grade-client";
 
 // Grade a real recorded call against the THB Sales Standard, by pasting its
@@ -32,26 +39,39 @@ export default async function GradePage() {
         <summary style={{ cursor: "pointer", fontWeight: 600, fontSize: 14 }}>
           What the standard scores ({CALL_SKILL_MAX} points from the call, {PROCESS_COMPLIANCE.points} reserved)
         </summary>
+        {(["intake", "acquisition"] as CallRole[]).map((role) => (
+          <div key={role} style={{ marginTop: 14 }}>
+            <h3 style={{ fontSize: 14, margin: "0 0 2px" }}>{ROLE_LABEL[role]}</h3>
+            <p className="small muted" style={{ margin: "0 0 8px", maxWidth: "70ch" }}>
+              {ROLE_BLURB[role]}
+            </p>
+            <table className="table">
+              <tbody>
+                {ROLE_SKILL[role].map((c) => (
+                  <tr key={c.id}>
+                    <td style={{ width: 190 }}>{c.name}</td>
+                    <td style={{ width: 60 }}>{c.points} pts</td>
+                    <td className="small muted">{c.looksLike}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))}
         <table className="table" style={{ marginTop: 10 }}>
           <tbody>
-            {CALL_SKILL.map((c) => (
-              <tr key={c.id}>
-                <td style={{ width: 190 }}>{c.name}</td>
-                <td style={{ width: 60 }}>{c.points} pts</td>
-                <td className="small muted">{c.looksLike}</td>
-              </tr>
-            ))}
             <tr>
-              <td>{PROCESS_COMPLIANCE.name}</td>
-              <td>{PROCESS_COMPLIANCE.points} pts</td>
+              <td style={{ width: 190 }}>{PROCESS_COMPLIANCE.name}</td>
+              <td style={{ width: 60 }}>{PROCESS_COMPLIANCE.points} pts</td>
               <td className="small muted">{PROCESS_COMPLIANCE.note}</td>
             </tr>
           </tbody>
         </table>
-        <p className="notice notice-amber small" style={{ marginBottom: 0 }}>
-          <strong>These weights are provisional.</strong> They come from the written Phone Academy rules, not
-          from analysing real winning calls. Once the game film is in — real recordings with outcome labels —
-          the numbers get replaced with what actually separates a won call from a lost one.
+        <p className="notice notice-blue small" style={{ marginBottom: 0 }}>
+          <strong>Calibrated against 52 real calls</strong> (September 2026) — read them at{" "}
+          <Link href="/admin/calls">the call library</Link>, and the reasoning in{" "}
+          <code>docs/CALL-FINDINGS.md</code>. The headline change: the desk and acquisitions are graded
+          differently, because quoting a number is a hard fail in one seat and the job in the other.
         </p>
       </details>
 

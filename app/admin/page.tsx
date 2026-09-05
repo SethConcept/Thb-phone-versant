@@ -99,6 +99,9 @@ export default async function AdminPage({
           <Link href="/admin/grade" className="pill pill-green" style={{ textDecoration: "none", padding: "6px 14px" }}>
             🎧 Grade a real call
           </Link>
+          <Link href="/admin/calls" className="pill pill-green" style={{ textDecoration: "none", padding: "6px 14px" }}>
+            🗂 Call library
+          </Link>
           <a href="/academy.html" target="_blank" className="pill pill-blue" style={{ textDecoration: "none", padding: "6px 14px" }}>
             📖 Academy
           </a>

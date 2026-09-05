@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "calls:pull": "node scripts/reibb-pull.mjs",
+    "calls:redact": "node scripts/redact-calls.mjs",
+    "calls:stats": "node scripts/corpus-stats.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.9.0",

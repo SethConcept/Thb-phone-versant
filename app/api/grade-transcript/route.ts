@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { SCORING_MODEL } from "@/lib/models";
-import { salesStandardPrompt } from "@/lib/sales-standard";
+import { salesStandardPrompt, type CallRole } from "@/lib/sales-standard";
 import { buildStandardReport } from "@/lib/call-report";
 
 // Admin-only: grade ANY pasted call transcript against the THB Sales
@@ -22,7 +22,10 @@ export async function POST(req: Request) {
   } = await authClient.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { transcript, context } = await req.json().catch(() => ({}));
+  const { transcript, context, role: rawRole } = await req.json().catch(() => ({}));
+  // Which seat was on the call decides the whole rubric — the desk must never
+  // quote a price, acquisitions has to. See docs/CALL-FINDINGS.md §1.
+  const role: CallRole = rawRole === "acquisition" ? "acquisition" : "intake";
   const text = String(transcript || "").trim();
   if (text.length < 80)
     return NextResponse.json(
@@ -37,7 +40,11 @@ export async function POST(req: Request) {
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
     result = await ai.models.generateContent({
       model: process.env.SCORING_MODEL || SCORING_MODEL,
-      contents: salesStandardPrompt(text, typeof context === "string" ? context.slice(0, 500) : undefined),
+      contents: salesStandardPrompt(
+        text,
+        typeof context === "string" ? context.slice(0, 500) : undefined,
+        role
+      ),
     });
   } catch (e: any) {
     return NextResponse.json({ error: `Scoring model error: ${e?.message || e}` }, { status: 502 });
@@ -50,5 +57,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "The grader returned unreadable output — try again." }, { status: 502 });
   }
 
-  return NextResponse.json({ ok: true, report: buildStandardReport(parsed) });
+  return NextResponse.json({ ok: true, report: buildStandardReport(parsed, role) });
 }

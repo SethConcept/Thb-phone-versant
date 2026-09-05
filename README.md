@@ -20,7 +20,7 @@ certification test, plus a sales practice mode and the courseware:
 
 2. **📞 The certification call** — ONE realistic inbound call, ~5 minutes,
    auto-graded the moment it ends. The line rings, the trainee answers with
-   the mandatory open, and the AI plays one of **16 named situational
+   the mandatory open, and the AI plays one of **19 named situational
    sellers** (all "saw the TV commercial"): Dolores (grieving), Marcus
    (probate from Texas), Renee (divorce deadline), Dave (relocating), Gloria
    (behind on payments), Sam (tired landlord), Priya (embarrassed
@@ -31,10 +31,16 @@ certification test, plus a sales practice mode and the courseware:
    Denise (a Realtor calling IN, asks how her commission is handled), Terri
    (mobile home — the correct outcome is a KIND, CLEAR NO per the buy box),
    and Jonathan (Menlo Park estate — the correct outcome is CAPTURE AND
-   ESCALATE to Juan, never a desk decision). Sellers are dealt **without
-   replacement**, so the first 16 calls cover all 16. Each call also *secretly weaves in* 2 pressure
-   lines and 2 seller questions at natural moments. No examiner, no
-   sections: every skill is tested inside the call where it actually lives.
+   ESCALATE to Juan, never a desk decision). Three more come straight out of
+   the real-call corpus: Warren (calling for a brother-in-law in a care home
+   — trust, POA, squatters, a red-tagged house), Arthur & Camille (two
+   siblings on the line, three on the title, who take the "as-is means
+   as-is" question apart), and Minh (a bad line and a second language, where
+   the whole call is won or lost on patience and confirming back). Sellers
+   are dealt **without replacement**, so the first 19 calls cover all 19.
+   Each call also *secretly weaves in* 2 pressure lines and 2 seller
+   questions at natural moments. No examiner, no sections: every skill is
+   tested inside the call where it actually lives.
 
    Buy-box rules baked into grading: California only; no manufactured or
    mobile homes (park or owned land); high-end heavy-rehab properties get
@@ -74,7 +80,16 @@ certification test, plus a sales practice mode and the courseware:
    trainee runs the outbound follow-up script. Easy/hard difficulty,
    engagement-meter behavior, AI-scored (max 3 attempts per link).
 
-5. **📖 Courseware** — the Phone Academy study course at `/academy.html`
+5. **🗂 Real call library + grader** (`/admin/calls`, `/admin/grade`) — 52
+   real Twin Home Buyer calls pulled from REI BlackBook and scrubbed of
+   names, numbers and addresses, readable in the app and gradeable against
+   the **THB Sales Standard**. That standard is *role-aware*: the intake
+   desk and acquisitions are scored on different rubrics, because quoting a
+   number is an automatic fail in one seat and the entire job in the other.
+   `/admin/grade` scores any pasted transcript the same way. What the corpus
+   changed, and why, is written up in `docs/CALL-FINDINGS.md`.
+
+6. **📖 Courseware** — the Phone Academy study course at `/academy.html`
    and the Dispositions Training course at `/dispo.html`.
 
 **Stack:** Next.js · Gemini Live API · Supabase · Vercel.
@@ -138,3 +153,17 @@ draws fresh random material. Sales practice links allow 3 attempts.
 - [ ] Scoring returns valid JSON; hard fails quote the trainee's words
 - [ ] A run with a deliberate price quote comes back FAIL
 - [ ] Model name still current (`lib/models.ts` — Live model names rotate)
+
+## Refreshing the real-call corpus
+
+```bash
+npm run calls:pull   -- --cookies ./cookies.txt --contacts 20248727,20405298
+npm run calls:redact -- ./raw-calls data/real-calls
+npm run calls:stats
+```
+
+REI BlackBook has no API key — log in through a browser, export the cookie
+jar, point the puller at it. Raw pulls contain real seller names, phone
+numbers, addresses and medical details; they are gitignored and must never be
+committed. The redactor scans its own output and prints anything that still
+looks like a person — **never commit output with open flags.**

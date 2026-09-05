@@ -44,9 +44,21 @@ export type ReportData = {
   flags: ReportFlag[];
   coaching: string | null;
   extra: string | null;
+  /**
+   * Company-policy gaps, NOT this person's mistakes — shown separately and
+   * never scored against them. Today: the recording disclosure that no human
+   * on this phone gives (docs/CALL-FINDINGS.md §2).
+   */
+  policy?: string[];
 };
 
-import { scoreAgainstStandard, CALL_SKILL_MAX, PROCESS_COMPLIANCE } from "./sales-standard";
+import {
+  scoreAgainstStandard,
+  CALL_SKILL_MAX,
+  PROCESS_COMPLIANCE,
+  ROLE_LABEL,
+  type CallRole,
+} from "./sales-standard";
 
 const ALL_ITEMS = [...PRESSURE_LINES, ...SHORT_ANSWERS, ...MODEL_ITEMS, ...ENDING_ITEMS];
 export const itemLabel = (id: string) => ALL_ITEMS.find((x) => x.id === id)?.seller ?? id;
@@ -124,8 +136,8 @@ export function aggregateBars(reports: ReportData[]) {
  * A REAL call graded against the THB Sales Standard (no persona, no draw).
  * Used by the paste-a-transcript grader and, later, by real-call monitoring.
  */
-export function buildStandardReport(parsed: any): ReportData {
-  const s = scoreAgainstStandard(parsed);
+export function buildStandardReport(parsed: any, role: CallRole = "intake"): ReportData {
+  const s = scoreAgainstStandard(parsed, role);
   const strengths: string[] = [];
   const recommendations: string[] = [];
 
@@ -158,7 +170,7 @@ export function buildStandardReport(parsed: any): ReportData {
     scoreText: `${s.score100} / 100`,
     score100: s.score100,
     whoLabel: "Call",
-    who: "Real call · THB Sales Standard",
+    who: `Real call · ${ROLE_LABEL[s.role]} · THB Sales Standard`,
     note: openingBits,
     passRule: `Call skill ${s.points}/${CALL_SKILL_MAX} · ${PROCESS_COMPLIANCE.name} (${PROCESS_COMPLIANCE.points} pts) not scored — needs CRM data`,
     bars: s.categories.map((c) => ({ label: c.name, got: c.got, max: c.max })),
@@ -167,6 +179,7 @@ export function buildStandardReport(parsed: any): ReportData {
     flags: s.breaches.map((b) => ({ label: hardFailLabel(b.rule), quote: b.quote })),
     coaching: parsed.coaching_note || null,
     extra: parsed.summary_note || null,
+    policy: s.policyAlerts.map((p) => p.label),
   };
 }
 

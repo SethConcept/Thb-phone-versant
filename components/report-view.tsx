@@ -20,6 +20,8 @@ export type ReportData = {
   flags: ReportFlag[];
   coaching: string | null;
   extra: string | null;
+  /** Company-policy gaps, not this person's mistakes. Never scored. */
+  policy?: string[];
 };
 
 export function ReportBars({ bars }: { bars: ReportBar[] }) {
@@ -71,6 +73,15 @@ export function ReportView({ data, heading }: { data: ReportData; heading?: stri
               {f.quote && <> — “{f.quote}”</>}
             </div>
           ))}
+        </div>
+      )}
+
+      {(data.policy ?? []).length > 0 && (
+        <div className="rpt-policy">
+          <strong>Policy — for the team, not this call&apos;s score</strong>
+          <ul>
+            {(data.policy ?? []).map((p, i) => <li key={i}>{p}</li>)}
+          </ul>
         </div>
       )}
 
