@@ -95,7 +95,31 @@ a { color: var(--brand-ink); }
 .score-card { border-radius: 10px; padding: 14px; margin: 10px 0; font-size: 14px; text-align: left; }
 .score-pass { background: var(--green-bg); }
 .score-borderline { background: var(--amber-bg); }
-.score-fail { background: var(--red-bg); }
+/* "not passed yet" reads as keep-training amber, not a red FAIL wall */
+.score-fail { background: var(--amber-bg); }
+
+/* Coach-report layout inside score cards: category bars, strengths vs
+   recommendations, coaching banner */
+.rpt-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rpt-score { font-size: 26px; font-weight: 800; line-height: 1; }
+.rpt-score small { font-size: 13px; font-weight: 600; color: var(--muted); }
+.rpt-bars { display: grid; gap: 7px; margin: 12px 0 4px; }
+.rpt-bar { display: grid; grid-template-columns: 118px 1fr 56px; gap: 10px; align-items: center; }
+.rpt-bar .lbl { color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 10.5px; font-weight: 700; }
+.rpt-track { height: 8px; border-radius: 999px; background: rgba(128, 128, 128, 0.18); overflow: hidden; display: block; }
+.rpt-fill { height: 100%; border-radius: 999px; display: block; }
+.rpt-good { background: var(--green); }
+.rpt-mid { background: var(--amber); }
+.rpt-low { background: var(--red); }
+.rpt-n { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 12.5px; }
+.rpt-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 12px; }
+.rpt-cols h4 { margin: 0 0 6px; font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase; }
+.rpt-cols .good h4 { color: var(--green); }
+.rpt-cols .work h4 { color: var(--amber); }
+.rpt-cols ul { margin: 0; padding-left: 18px; font-size: 13px; }
+.rpt-cols li { margin-bottom: 5px; }
+.rpt-breach { color: var(--red); }
+.rpt-coach { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--blue-bg); font-size: 13.5px; }
 
 .meter { height: 16px; background: #e7ebef; border-radius: 999px; overflow: hidden; margin: 18px 0; }
 .meter > div { height: 100%; transition: width 0.08s linear; border-radius: 999px; }

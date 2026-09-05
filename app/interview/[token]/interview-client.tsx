@@ -984,10 +984,14 @@ export default function InterviewClient({
                 <p className="small muted" style={{ marginTop: 0 }}>That was: <strong>{r.who}</strong></p>
               )}
               <p>
-                <span className={`pill ${r.pass ? "pill-green" : "pill-red"}`} style={{ fontSize: 14 }}>{r.summary}</span>
+                <span className={`pill ${r.pass ? "pill-green" : "pill-amber"}`} style={{ fontSize: 14 }}>{r.summary}</span>
                 {r.picked && <span className="pill pill-blue" style={{ fontSize: 12, marginLeft: 8 }}>practice — doesn&apos;t count toward certification</span>}
               </p>
-              {!r.pass && r.reason && <p className="small" style={{ color: "var(--red)" }}>{r.reason}</p>}
+              {!r.pass && r.reason && (
+                <p className="small" style={{ color: "var(--amber)" }}>
+                  <strong>Work on this next:</strong> {r.reason}
+                </p>
+              )}
               {r.pass && !r.picked && (
                 <p className="small muted">
                   {isDispo
