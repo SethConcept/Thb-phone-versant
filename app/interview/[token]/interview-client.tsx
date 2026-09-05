@@ -695,6 +695,7 @@ export default function InterviewClient({
             />
           </div>
           <div className="gv2-topright">
+            <a href={`/learn/${token}/results`} className="gv2-backlink">My results</a>
             <a href={`/learn/${token}`} className="gv2-backlink">My learning path</a>
             <span className="gv2-me">{initialOf(candidateName)}</span>
           </div>
@@ -967,6 +968,7 @@ export default function InterviewClient({
           <div className="row" style={{ justifyContent: "center" }}>
             <a className="btn" href={`/interview/${token}?drill=one`}>⚡ Another quick one</a>
             <a className="btn btn-secondary" href={`/interview/${token}?drill=three`}>🔁 Three in a row</a>
+            <a className="btn btn-ghost" href={`/learn/${token}/results`}>📊 My results</a>
             <a className="btn btn-ghost" href={`/learn/${token}`}>My learning path</a>
           </div>
         </Shell>
@@ -1002,6 +1004,7 @@ export default function InterviewClient({
               {r.coaching && <p className="small muted">Coach&apos;s note: {r.coaching}</p>}
               <div className="row" style={{ justifyContent: "center" }}>
                 <button className="btn" onClick={backToDesk}>☎️ Back to the phones</button>
+                <a className="btn btn-secondary" href={`/learn/${token}/results`}>📊 My results</a>
                 <a className="btn btn-ghost" href={`/learn/${token}`}>My learning path</a>
               </div>
             </>
@@ -1011,6 +1014,7 @@ export default function InterviewClient({
               <p className="small muted">We couldn&apos;t grade it automatically this time — the team can grade it manually, or just take another call.</p>
               <div className="row" style={{ justifyContent: "center" }}>
                 <button className="btn" onClick={backToDesk}>☎️ Back to the phones</button>
+                <a className="btn btn-secondary" href={`/learn/${token}/results`}>📊 My results</a>
                 <a className="btn btn-ghost" href={`/learn/${token}`}>My learning path</a>
               </div>
             </>

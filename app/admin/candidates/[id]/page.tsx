@@ -4,25 +4,18 @@ import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import ScoreButton from "./score-button";
-import {
-  DRILL_CRITERIA,
-  HARD_FAILS,
-  PRESSURE_LINES,
-  SHORT_ANSWERS,
-  SELLER_PERSONAS,
-  CERT_SELLERS,
-} from "@/lib/academy";
-import { MODEL_ITEMS, ENDING_ITEMS } from "@/lib/drills";
 import { LEARN_MODULES } from "@/lib/modules";
-import {
-  DISPO_MODULES,
-  DISPO_AGENTS,
-  DISPO_RUBRIC,
-  DISPO_BREACHES,
-  DISPO_MAX_SCORE,
-  DISPO_GATE,
-} from "@/lib/dispo";
+import { DISPO_MODULES, DISPO_GATE } from "@/lib/dispo";
 import { pathState, type ModuleProgressRow } from "@/lib/progress";
+import {
+  CallReport,
+  ReportBars,
+  verdictClass,
+  itemLabel,
+  personaLabel,
+  hardFailLabel,
+  dispoAgentLabel,
+} from "@/components/call-report";
 
 const STATUSES = ["invited", "interviewed", "scored", "certified", "passed", "failed"];
 
@@ -53,61 +46,6 @@ async function toggleSkip(formData: FormData) {
     .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath(`/admin/candidates/${id}`);
-}
-
-function verdictClass(v?: string) {
-  if (v === "PASS") return "score-pass";
-  if (v === "BORDERLINE") return "score-borderline";
-  return "score-fail";
-}
-
-const ALL_ITEMS = [...PRESSURE_LINES, ...SHORT_ANSWERS, ...MODEL_ITEMS, ...ENDING_ITEMS];
-const itemLabel = (id: string) => ALL_ITEMS.find((x) => x.id === id)?.seller ?? id;
-
-const personaLabel = (id?: string) =>
-  CERT_SELLERS.find((x) => x.id === id)?.label ??
-  SELLER_PERSONAS.find((x) => x.id === id)?.label ??
-  id ??
-  "—";
-
-const hardFailLabel = (id: string) =>
-  HARD_FAILS.find((x) => x.id === id)?.label ?? id;
-
-const dispoAgentLabel = (id?: string) =>
-  DISPO_AGENTS.find((a) => a.id === id)?.label ?? id ?? "—";
-const dispoRubricName = (id: string) =>
-  DISPO_RUBRIC.find((r) => r.id === id)?.name ?? id;
-const dispoBreachDesc = (id: string) =>
-  DISPO_BREACHES.find((b) => b.id === id)?.desc ?? id;
-
-// Coach-report bar groups for the dispo rubric (each item is 0–2)
-const DISPO_GROUPS: { label: string; ids: string[] }[] = [
-  { label: "Opening", ids: ["identify", "reason", "position", "stop_talking"] },
-  { label: "Boundaries", ids: ["disclosure", "lane"] },
-  { label: "Pricing", ids: ["pricing_handback", "commission"] },
-  { label: "Buy box", ids: ["buybox", "pain"] },
-  { label: "Wrap-up", ids: ["next_step", "tone"] },
-];
-
-// Shared bar renderer for the coach-report cards
-function ReportBars({ bars }: { bars: { label: string; got: number; max: number }[] }) {
-  return (
-    <div className="rpt-bars">
-      {bars.map((b) => {
-        const ratio = b.max > 0 ? b.got / b.max : 0;
-        const tone = ratio >= 0.75 ? "rpt-good" : ratio >= 0.5 ? "rpt-mid" : "rpt-low";
-        return (
-          <div key={b.label} className="rpt-bar">
-            <span className="lbl">{b.label}</span>
-            <span className="rpt-track">
-              <span className={`rpt-fill ${tone}`} style={{ width: `${Math.round(ratio * 100)}%` }} />
-            </span>
-            <span className="rpt-n">{b.got} / {b.max}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
 }
 
 // Latest score row of an attempt (rescores supersede earlier rows)
@@ -370,187 +308,8 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
                     ))}
                     {d.persona_note && <div className="small muted" style={{ marginLeft: 12 }}>{d.persona_note}</div>}
                   </>
-                ) : d && d.kind === "dispo" ? (() => {
-                  const items: any[] = Array.isArray(d.items) ? d.items : [];
-                  const scoreOf = (rid: string) =>
-                    Math.max(0, Math.min(2, Number(items.find((x) => x?.id === rid)?.score) || 0));
-                  const total = s.completeness ?? DISPO_RUBRIC.reduce((sum, r) => sum + scoreOf(r.id), 0);
-                  const known = items.filter((x) => DISPO_RUBRIC.some((r) => r.id === x?.id));
-                  const strengths = known.filter((x) => Number(x.score) === 2);
-                  const recs = known.filter((x) => Number(x.score) < 2);
-                  const breaches: any[] = Array.isArray(d.breaches) ? d.breaches : [];
-                  const pass = s.verdict === "PASS";
-                  return (
-                    <>
-                      <div className="rpt-head">
-                        <span className="rpt-score">{total}<small> / {DISPO_MAX_SCORE}</small></span>
-                        <span className={`pill ${pass ? "pill-green" : "pill-amber"}`}>
-                          {pass ? "✓ Passed — counts toward certification" : "Keep training — see recommendations"}
-                        </span>
-                        <span className="small muted">({s.scored_by}) · pass needs 21+ with zero boundary breaches</span>
-                      </div>
-                      <ReportBars
-                        bars={DISPO_GROUPS.map((g) => ({
-                          label: g.label,
-                          got: g.ids.reduce((a, rid) => a + scoreOf(rid), 0),
-                          max: g.ids.length * 2,
-                        }))}
-                      />
-                      <div className="rpt-cols">
-                        <div className="good">
-                          <h4>Strengths</h4>
-                          <ul>
-                            {strengths.length === 0 && <li className="muted">None yet — see recommendations.</li>}
-                            {strengths.map((x: any, i: number) => (
-                              <li key={i}>
-                                {dispoRubricName(x.id)}
-                                {x.note && <span className="muted"> — {x.note}</span>}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        <div className="work">
-                          <h4>Recommendations</h4>
-                          <ul>
-                            {breaches.map((b: any, i: number) => (
-                              <li key={`b${i}`} className="rpt-breach">
-                                Boundary: {dispoBreachDesc(b.id)}
-                                {b.quote && <> — “{b.quote}”</>}
-                              </li>
-                            ))}
-                            {recs.map((x: any, i: number) => (
-                              <li key={i}>
-                                {dispoRubricName(x.id)} ({x.score}/2)
-                                {x.note && <span className="muted"> — {x.note}</span>}
-                              </li>
-                            ))}
-                            {breaches.length === 0 && recs.length === 0 && (
-                              <li className="muted">Nothing — clean call.</li>
-                            )}
-                          </ul>
-                        </div>
-                      </div>
-                      {(d.buybox_captured ?? []).length > 0 && (
-                        <div className="small" style={{ marginTop: 10 }}>
-                          <strong>Buy box captured:</strong> {(d.buybox_captured ?? []).join(" · ")}
-                        </div>
-                      )}
-                      {d.coaching_note && (
-                        <div className="rpt-coach"><strong>Coaching:</strong> {d.coaching_note}</div>
-                      )}
-                    </>
-                  );
-                })() : d ? (
-                  <>
-                    <div className="rpt-head">
-                      <span className={`pill ${s.verdict === "PASS" ? "pill-green" : "pill-amber"}`}>
-                        {s.verdict === "PASS" ? "✓ Passed — counts toward certification" : "Keep training — see recommendations"}
-                      </span>
-                      <span className="small muted">({s.scored_by})</span>
-                    </div>
-                    {s.knockout_reason && (
-                      <p className="small" style={{ margin: "6px 0 0" }}>
-                        <strong>Recommendation:</strong> {s.knockout_reason}
-                      </p>
-                    )}
-                    {(() => {
-                      const vItems = Array.isArray(d.items)
-                        ? d.items
-                        : [...(d.part_b ?? []), ...(d.part_c ?? [])];
-                      const vCrit = d.criteria ?? d.part_d?.criteria ?? {};
-                      const bars = [
-                        { label: "The open", got: Number(d.part_a?.delivery) || 0, max: 5 },
-                        ...(vItems.length > 0
-                          ? [{ label: "Seller lines", got: vItems.filter((x: any) => x?.pass === true).length, max: vItems.length }]
-                          : []),
-                        { label: "Call handling", got: DRILL_CRITERIA.filter((c) => vCrit[c.id] === true).length, max: DRILL_CRITERIA.length },
-                      ];
-                      return <ReportBars bars={bars} />;
-                    })()}
-
-                    {(d.hard_fails ?? []).length > 0 && (
-                      <div className="notice notice-gray small" style={{ margin: "8px 0", color: "var(--red)" }}>
-                        {(d.hard_fails ?? []).map((h: any, i: number) => (
-                          <div key={i}>
-                            🚫 <strong>{hardFailLabel(h.rule)}</strong>
-                            {h.quote && <> — “{h.quote}”</>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="small" style={{ marginTop: 6 }}>
-                      <strong>The open:</strong>{" "}
-                      {d.part_a?.name_given ? "✓ name" : "✗ name"} ·{" "}
-                      {d.part_a?.recording_disclosure ? "✓ recording disclosure" : "✗ RECORDING DISCLOSURE"} ·{" "}
-                      {d.part_a?.source_question ? "✓ how-did-you-hear" : "✗ how-did-you-hear"} ·{" "}
-                      delivery {d.part_a?.delivery ?? "—"}/5
-                      {d.part_a?.note && <span className="muted"> — {d.part_a.note}</span>}
-                    </div>
-
-                    {(d.items ?? []).length > 0 && (
-                      <div className="small" style={{ marginTop: 6 }}>
-                        <strong>Embedded seller lines:</strong>
-                        {(d.items ?? []).map((item: any, i: number) => (
-                          <div key={i} style={{ marginLeft: 12 }}>
-                            {item.pass ? "✓" : "✗"} “{itemLabel(item.id)}”
-                            {item.note && <span className="muted"> — {item.note}</span>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {(["part_b", "part_c"] as const).map((pk) =>
-                      (d[pk] ?? []).length > 0 && (
-                        <div className="small" style={{ marginTop: 6 }} key={pk}>
-                          <strong>{pk === "part_b" ? "Pressure lines (legacy test):" : "Seller questions (legacy test):"}</strong>
-                          {(d[pk] ?? []).map((item: any, i: number) => (
-                            <div key={i} style={{ marginLeft: 12 }}>
-                              {item.pass ? "✓" : "✗"} “{itemLabel(item.id)}”
-                              {item.note && <span className="muted"> — {item.note}</span>}
-                            </div>
-                          ))}
-                        </div>
-                      )
-                    )}
-
-                    {(() => {
-                      const crit = d.criteria ?? d.part_d?.criteria;
-                      if (!crit) return null;
-                      return (
-                        <div className="small" style={{ marginTop: 6 }}>
-                          <strong>Call handling ({personaLabel(draw?.persona)}):</strong>{" "}
-                          {DRILL_CRITERIA.filter((c) => crit[c.id] === true).length}/{DRILL_CRITERIA.length}
-                          {DRILL_CRITERIA.some((c) => crit[c.id] === false) && (
-                            <span style={{ color: "var(--red)" }}>
-                              {" "}· missed: {DRILL_CRITERIA.filter((c) => crit[c.id] === false).map((c) => c.label).join("; ")}
-                            </span>
-                          )}
-                          {(d.persona_note ?? d.part_d?.persona_note) && (
-                            <div className="muted" style={{ marginLeft: 12 }}>{d.persona_note ?? d.part_d?.persona_note}</div>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </>
-                ) : s.outcome ? (
-                  <>
-                    <span className={`pill ${s.outcome === "INTERESTED" ? "pill-green" : s.outcome === "NOT_INTERESTED" ? "pill-red" : "pill-gray"}`} style={{ marginRight: 8 }}>
-                      Seller: {s.outcome.replace("_", " ")}
-                    </span>
-                    <strong>{s.verdict}</strong> ({s.scored_by}) —{" "}
-                    <strong>
-                      Average {(((s.warmth ?? 0) + (s.clarity ?? 0) + (s.confidence ?? 0) + (s.professionalism ?? 0) + (s.conversational ?? 0) + (s.completeness ?? 0) + (s.ending_handling ?? 0)) / 7).toFixed(2)} / 5
-                    </strong>
-                    <div className="small" style={{ marginTop: 4 }}>
-                      Warmth {s.warmth} · Clarity {s.clarity} · Confidence {s.confidence} · Professionalism {s.professionalism} · Conversational {s.conversational} · Completeness {s.completeness} · Ending {s.ending_handling}
-                    </div>
-                    {s.knockout && <div>⚠️ Flag: {s.knockout_reason}</div>}
-                  </>
                 ) : (
-                  <>
-                    <strong>{s.verdict}</strong> ({s.scored_by})
-                    {s.knockout && <div>⚠️ {s.knockout_reason}</div>}
-                  </>
+                  <CallReport score={s} draw={draw} audience="admin" />
                 )}
                 {s.notes && d?.kind !== "dispo" && (
                   <div className="small" style={{ marginTop: 4 }}>Notes: {s.notes}</div>

@@ -97,7 +97,12 @@ export default async function ModulePage({
               </Link>
             </div>
           )}
-          <div className={`learn-navitem learn-navtest ${state.allComplete || unlockAll ? "" : "locked"}`} style={isDispo ? undefined : { borderTop: "none", marginTop: 0, paddingTop: 0 }}>
+          <div className="learn-navitem learn-navtest" style={isDispo ? undefined : { borderTop: "none", marginTop: 0, paddingTop: 0 }}>
+            <Link href={`/learn/${token}/results`} className="learn-testlink">
+              📊 My results
+            </Link>
+          </div>
+          <div className={`learn-navitem learn-navtest ${state.allComplete || unlockAll ? "" : "locked"}`} style={{ borderTop: "none", marginTop: 0, paddingTop: 0 }}>
             {state.allComplete || unlockAll ? (
               <Link href={`/interview/${token}`} className="learn-testlink">
                 🏁 Certification calls — unlocked
