@@ -20,15 +20,19 @@ certification test, plus a sales practice mode and the courseware:
 
 2. **📞 The certification call** — ONE realistic inbound call, ~5 minutes,
    auto-graded the moment it ends. The line rings, the trainee answers with
-   the mandatory open, and the AI plays one of **10 named situational
+   the mandatory open, and the AI plays one of **16 named situational
    sellers** (all "saw the TV commercial"): Dolores (grieving), Marcus
    (probate from Texas), Renee (divorce deadline), Dave (relocating), Gloria
    (behind on payments), Sam (tired landlord), Priya (embarrassed
-   inheritor), Victor (Zillow anchor), Terri (mobile home — the correct
-   outcome is a KIND, CLEAR NO per the buy box), and Jonathan (Menlo Park
-   estate — the correct outcome is CAPTURE AND ESCALATE to Juan, never a
-   desk decision). Sellers are dealt **without replacement**, so the first
-   10 calls cover all 10. Each call also *secretly weaves in* 2 pressure
+   inheritor), Victor (Zillow anchor), Larry (inherited his father's place —
+   the cooperative demo caller), Ray (angry, hounded by wholesalers),
+   Marguerite (answers in two words — tests silence), Curtis (shopping
+   several cash buyers), Yvette (three siblings on title, one refuses),
+   Denise (a Realtor calling IN, asks how her commission is handled), Terri
+   (mobile home — the correct outcome is a KIND, CLEAR NO per the buy box),
+   and Jonathan (Menlo Park estate — the correct outcome is CAPTURE AND
+   ESCALATE to Juan, never a desk decision). Sellers are dealt **without
+   replacement**, so the first 16 calls cover all 16. Each call also *secretly weaves in* 2 pressure
    lines and 2 seller questions at natural moments. No examiner, no
    sections: every skill is tested inside the call where it actually lives.
 

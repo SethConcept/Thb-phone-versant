@@ -35,10 +35,10 @@ count toward anything.
 ## The certification call (one realistic inbound call, ~5 min)
 
 No examiner, no sections. The line rings; the trainee answers with the
-mandatory open; the AI plays one of the 10 named situational sellers in
+mandatory open; the AI plays one of the 16 named situational sellers in
 `CERT_SELLERS` (all inbound from TV), dealt WITHOUT replacement so the
-first 10 calls cover the whole deck. Each seller carries an expected
-outcome: book (8 sellers), kind_no (Terri — mobile home; buy box:
+first 16 calls cover the whole deck. Each seller carries an expected
+outcome: book (13 sellers), kind_no (Terri — mobile home; buy box:
 California only, no manufactured homes), or escalate (Jonathan — Menlo
 Park estate; Juan's personal call, never the desk's). The draw also embeds
 2 pressure lines + 2 seller questions (incl. the out-of-state Vegas condo
@@ -103,6 +103,29 @@ stay server-only). Structure mirrors Versant:
 - **Gate**: 5 passed calls, one of which must be Gary ("THE TRAP" —
   friendly pull-you-across-the-line agent). Admin shows calls-passed and
   trap-cleared pills.
+
+## Real-call grading (the THB Sales Standard)
+
+`lib/sales-standard.ts` is a SECOND rubric, for real recorded calls that
+have no persona and no answer key. Weighted per the ops spec and split in
+two on purpose: **call skill** (80 pts — rapport, motivation, qualification,
+price, objections, next step) is everything a recording can prove;
+**process compliance** (20 pts — response time, CRM routing, whether the
+follow-up happened) is RESERVED and not scored from audio, because it isn't
+in the audio. Weights are provisional until real game film replaces them.
+
+`/admin/grade` scores any pasted transcript against it — no telephony
+needed. `/api/grade-transcript` is the same path a real-call monitoring
+pipeline would use.
+
+## Progress tracking
+
+`components/trend.tsx` draws score-over-time (inline SVG), a
+last-5-vs-previous-5 delta, and weak-spot bars. Shown per trainee in admin,
+on the trainee's own results page, and rolled up across the whole team on
+`/admin`. Computed from existing score rows — no schema change.
+`lib/practice-map.ts` turns a report's recommendations into "practice this"
+links to the callers who drill that weakness.
 
 ## Code map (repo root)
 
