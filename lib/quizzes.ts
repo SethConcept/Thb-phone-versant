@@ -56,6 +56,17 @@ export const QUIZZES: Record<string, QuizQuestion[]> = {
       why: "California requires everyone on the call to know. It goes in the open, before any seller information — leaving it out is an automatic fail.",
     },
     {
+      q: "You are calling a seller back. Do you still have to say the call is recorded?",
+      options: [
+        "No — the disclosure is only for calls they make to us",
+        "Only if they ask whether they are being recorded",
+        "Yes — every recorded call, whoever dialled it",
+        "Only on the first call to a new lead",
+      ],
+      answer: 2,
+      why: "Two-party consent is about the recording, not about who dialled. Outbound calls are recorded and transcribed exactly like inbound ones, so the line goes near the top of those too: \"Hi [name], this is [your first name] with Twin Home Buyer — just so you know, this call is recorded for quality.\"",
+    },
+    {
       q: "A caller asks where you are located. You say:",
       options: [
         "Where you're actually sitting",

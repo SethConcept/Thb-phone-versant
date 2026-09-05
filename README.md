@@ -51,7 +51,8 @@ certification test, plus a sales practice mode and the courseware:
    mailer amount, inventing stats, manufacturing urgency, "the offer is
    your check") = automatic FAIL with the offending line quoted back.
    Missing the recording disclosure or the how-did-you-hear question =
-   automatic FAIL. Otherwise: open delivery ≥ 3/5, at most one miss across
+   automatic FAIL. The disclosure is required on **outbound** calls too —
+   two-party consent is about the recording, not about who dialled. Otherwise: open delivery ≥ 3/5, at most one miss across
    the embedded lines, and 8/10 Academy call criteria.
 
    **Certification gate** (tracked per trainee in admin): 12 passed calls
@@ -73,6 +74,8 @@ certification test, plus a sales practice mode and the courseware:
    breach is an automatic FAIL** with the rep's words quoted back —
    claiming to be an agent, setting a list price, negotiating, inventing
    numbers, discussing the seller, off-the-books pay, accepting an offer.
+   Failing to say the call is recorded fails it too: these calls go out, but
+   they are still recorded.
    **Gate: 5 passed calls, one of which must be THE TRAP.** Courseware at
    `/dispo.html`.
 

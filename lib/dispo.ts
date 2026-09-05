@@ -137,9 +137,10 @@ export const DISPO_MODULES: DispoModule[] = [
 </div>
 <div class="ac-card">
   <h3>The opener</h3>
-  <div class="ac-say">"Hello — my name is Danny, I'm with Equity Track. I have a property in Oakland and wanted to see if you had a few minutes to talk." … "I saw you did the one around the corner." … "So I have this property. It's under contract, it's off market. We're either going to close on it and put it back on the market — we're thinking maybe a wholetail, where we go in, clean it up a little, cut the grass, and list it right back on the market — or we're going to wholesale the transaction. Title is already open, it's open at CWFG. And that's pretty much it."</div>
+  <div class="ac-say">"Hello — my name is Danny, I'm with Equity Track, and just so you know this call is recorded. I have a property in Oakland and wanted to see if you had a few minutes to talk." … "I saw you did the one around the corner." … "So I have this property. It's under contract, it's off market. We're either going to close on it and put it back on the market — we're thinking maybe a wholetail, where we go in, clean it up a little, cut the grass, and list it right back on the market — or we're going to wholesale the transaction. Title is already open, it's open at CWFG. And that's pretty much it."</div>
   <p class="ac-why"><b>— then stop talking —</b></p>
   <table class="ac-table"><tbody>
+    <tr><td><b>"This call is recorded"</b></td><td>Required, every call, before anything substantive. California is a two-party-consent state and every one of these calls is recorded and transcribed. Leaving it out is an automatic failure — it does not matter that you dialled them.</td></tr>
     <tr><td><b>"A few minutes to talk"</b></td><td>Asks permission. An agent who says yes has agreed to the conversation instead of enduring it.</td></tr>
     <tr><td><b>"I saw you did the one around the corner"</b></td><td>Proves you did homework. This is the whole difference between you and the spam they delete.</td></tr>
     <tr><td><b>"Under contract, off market"</b></td><td>Honest position, stated before they have to ask. You're a real buyer with a real contract.</td></tr>
@@ -732,7 +733,7 @@ export const DISPO_PROPERTY = {
 export type DispoRubricItem = { id: string; name: string; desc: string };
 
 export const DISPO_RUBRIC: DispoRubricItem[] = [
-  { id: "identify", name: "Identified self and company", desc: "Gave their name, said Equity Track, asked for a few minutes." },
+  { id: "identify", name: "Identified self and company", desc: "Gave their name, said Equity Track, disclosed that the call is recorded, and asked for a few minutes." },
   { id: "reason", name: "Gave the reason for the call", desc: "Referenced that this agent sold or listed something nearby." },
   { id: "position", name: "Stated the position honestly", desc: "Under contract, off market; either wholesale the transaction, or close and put it back on the market. Bonus credit for mentioning title is open." },
   { id: "stop_talking", name: "Stopped talking", desc: "Delivered the opener and let the agent respond instead of monologuing or over-pitching." },
@@ -756,6 +757,12 @@ export const DISPO_BREACHES: DispoBreach[] = [
   { id: "discussed_seller", desc: "Discussed the seller — their name, situation, motivation, or what they'd take" },
   { id: "direct_pay", desc: "Agreed to pay (or offered to pay) the agent personally instead of through the brokerage via escrow" },
   { id: "accepted_offer", desc: "Accepted an offer or a number verbally — said 'we can do that' or equivalent" },
+  // Not a licensing-boundary item like the seven above — a consent one. Kept
+  // in this list anyway because the consequence is identical: the call is
+  // unsafe regardless of how well it went. Two-party consent is about the
+  // RECORDING, not about who dialled, and these outbound calls are recorded
+  // and transcribed exactly like the seller line's. Required from 2026-09.
+  { id: "no_disclosure", desc: "Never told the agent the call is recorded" },
 ];
 
 export const DISPO_MAX_SCORE = DISPO_RUBRIC.length * 2; // 24

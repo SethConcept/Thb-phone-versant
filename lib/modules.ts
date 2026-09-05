@@ -64,9 +64,14 @@ export const LEARN_MODULES: ModuleDef[] = [
     html: `
 <div class="ac-card">
   <h3>The open</h3>
-  <div class="ac-say">"Thank you for calling Twin Home Buyer, this is <b>[your first name]</b>. This call is recorded for quality. Are you calling about a property you're thinking about selling?"</div>
+  <div class="ac-say">"Thank you for calling Twin Home Buyer, this is <b>[your first name]</b> — this call is recorded for quality. How can I help you today?"</div>
   <p class="ac-why">Your real first name. Never an alias, never an American nickname. You are on Juan's team and that is something to say with confidence.</p>
   <p class="ac-why ac-stop">The recording line comes before you collect anything. California requires everyone on a call to know it is recorded. Leaving it out is an automatic failure.</p>
+</div>
+<div class="ac-card">
+  <h3>When you are the one calling</h3>
+  <div class="ac-say">"Hi [name], this is <b>[your first name]</b> with Twin Home Buyer — just so you know, this call is recorded for quality."</div>
+  <p class="ac-why ac-stop">Two-party consent is about the <b>recording</b>, not about who dialled. Every outbound call is recorded and transcribed exactly like an inbound one, so the line is required there too — early, before anything substantive.</p>
 </div>
 <div class="ac-card">
   <h3>The question that pays for the advertising</h3>

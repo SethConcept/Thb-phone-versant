@@ -69,12 +69,14 @@ The property in the rep's file: ${DISPO_PROPERTY.blurb}
 
 CRITICAL CONTEXT FOR SCORING — the rep is NOT a licensed real estate agent. The rep IS allowed to state what ${DISPO_BRAND} wants for its own contract position (the wholesale ask in the file). The rep is NOT allowed to: claim or imply they are an agent, tell the agent what the property should be listed for, give an ARV or rehab estimate as fact, negotiate or counter on price, discuss the seller's personal situation or motivation, offer to pay an agent personally instead of through the brokerage, or accept any offer.
 
+The rep MUST tell the agent the call is recorded, early, before anything substantive. Any natural wording counts ("this call is recorded", "just so you know we record these"). It applies even though the rep placed the call — two-party consent is about the recording, not about who dialled.
+
 Score each rubric item 0, 1, or 2. Be a demanding trainer — a 2 means they did it well, not that they attempted it. If a conditional topic (e.g. commission) genuinely never came up in the call, score that item 2 and note "didn't come up".
 
 RUBRIC (use these exact ids):
 ${rubricList}
 
-BOUNDARY BREACHES — list each one that actually happened, with the rep's exact words. Use ONLY these ids:
+BREACHES — boundary and consent. List each one that actually happened, with the rep's exact words (for a missing recording disclosure there is no quote — leave it out). Use ONLY these ids:
 ${breachList}
 
 FAIRNESS: the rep may be a non-native English speaker and the transcript comes from ASR. Accent, grammar slips, and transcription artifacts are NOT scoring factors. Judge what they did, not how their English sounds.

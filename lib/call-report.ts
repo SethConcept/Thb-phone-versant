@@ -46,8 +46,9 @@ export type ReportData = {
   extra: string | null;
   /**
    * Company-policy gaps, NOT this person's mistakes — shown separately and
-   * never scored against them. Today: the recording disclosure that no human
-   * on this phone gives (docs/CALL-FINDINGS.md §2).
+   * never scored against them. The recording disclosure lived here until Juan
+   * ruled on it (2026-09); it is a real breach now. What is left is lead-source
+   * capture, which is a CRM problem before it is a phone problem.
    */
   policy?: string[];
 };
@@ -57,6 +58,7 @@ import {
   CALL_SKILL_MAX,
   PROCESS_COMPLIANCE,
   ROLE_LABEL,
+  DISCLOSURE_RULE,
   type CallRole,
 } from "./sales-standard";
 
@@ -70,7 +72,10 @@ export const personaLabel = (id?: string) =>
   "—";
 
 export const hardFailLabel = (id: string) =>
-  HARD_FAILS.find((x) => x.id === id)?.label ?? id;
+  HARD_FAILS.find((x) => x.id === id)?.label ??
+  // Not in HARD_FAILS — that list is about things the rep said, and this one
+  // is about something nobody said. See sales-standard.ts.
+  (id === DISCLOSURE_RULE.id ? DISCLOSURE_RULE.label : id);
 
 export const dispoAgentLabel = (id?: string) =>
   DISPO_AGENTS.find((a) => a.id === id)?.label ?? id ?? "—";

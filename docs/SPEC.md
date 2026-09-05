@@ -98,8 +98,11 @@ stay server-only). Structure mirrors Versant:
   (`DISPO_AGENTS`), dealt without replacement; dialing one by name =
   practice (`picked`, never gate-counted). `exam_meta` kind `dispo`.
 - **Grading**: `dispoScoringPrompt` returns 12 rubric items (0–2) +
-  boundary breaches with quotes; `dispoVerdict` is deterministic — any
-  canonical breach = FAIL, else pass at ≥ 21/24 (85%). Grader output is
+  breaches with quotes; `dispoVerdict` is deterministic — any canonical
+  breach = FAIL, else pass at ≥ 21/24 (85%). Seven of the breaches are
+  licensing-boundary ones; the eighth, `no_disclosure`, is consent — these
+  calls are outbound but they are still recorded, so the opener carries the
+  line and omitting it fails the call. Grader output is
   filtered to canonical ids and deduped. `scores.detail.kind = "dispo"`
   discriminates the admin renderer; `completeness` stores the total.
 - **Gate**: 5 passed calls, one of which must be Gary ("THE TRAP" —
@@ -127,10 +130,13 @@ points of **process compliance** (response time, CRM routing, whether the
 follow-up happened) that stays RESERVED and unscored, because it isn't in
 the audio.
 
-Missing the recording disclosure is reported as a **policy alert** — shown
-separately, never scored against the individual — because no human in the
-corpus gives it. That is a company-level legal question, not a trainee's
-mistake. See `docs/CALL-FINDINGS.md` §2.
+Missing the recording disclosure is a **compliance breach** in both seats
+and both directions — Juan ruled on it in September 2026 after the corpus
+showed zero human disclosures in 52 recorded calls. `MANDATORY_OPEN` was
+rewritten around the greeting the desk actually uses so the line has a
+realistic chance of being adopted, and `OUTBOUND_DISCLOSURE` covers calls we
+place. What is left in `policyAlerts` is lead-source capture, which is a CRM
+problem before it is a phone problem. See `docs/CALL-FINDINGS.md` §2.
 
 `/admin/grade` scores any pasted transcript against either rubric — no
 telephony needed. `/api/grade-transcript` is the same path a real-call

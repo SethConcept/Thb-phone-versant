@@ -12,7 +12,26 @@ export const OFFICE_LINE = "Our office is in San Carlos — 170 Glenn Way.";
 // Part A — the mandatory open. The only word-for-word part of any call.
 // ---------------------------------------------------------------------------
 
-export const MANDATORY_OPEN = `Thank you for calling Twin Home Buyer, this is [your first name]. This call is recorded for quality. Are you calling about a property you're thinking about selling?`;
+// The real calls (data/real-calls/) settled the wording. Two thirds of inbound
+// calls already open "thank you for calling Twin Home Buyer, this is <name>,
+// how may I help you" — word for word, both desk reps, unprompted. Nobody has
+// ever said the scripted "are you calling about a property you're thinking
+// about selling", and nobody has ever said the recording line either.
+//
+// So the open below keeps the greeting the desk actually uses and puts the
+// recording disclosure inside it. Asking people to insert one clause into a
+// sentence they already say by reflex is a far better bet than asking them to
+// adopt a script they have collectively ignored for six months.
+//
+// The NAME and the RECORDING LINE are not optional. The closing question is —
+// "how can I help you today" is what they say and it works fine.
+export const MANDATORY_OPEN = `Thank you for calling Twin Home Buyer, this is [your first name] — this call is recorded for quality. How can I help you today?`;
+
+// Two-party consent is about the RECORDING, not about who dialled. Outbound
+// calls are recorded and transcribed exactly like inbound ones, and in the
+// corpus not one of the 22 outbound calls disclosed it. Required from
+// 2026-09 (Juan's ruling).
+export const OUTBOUND_DISCLOSURE = `Hi [name], this is [your first name] with Twin Home Buyer — just so you know, this call is recorded for quality.`;
 
 export const SOURCE_QUESTION = `Before I forget — how did you come across us?`;
 

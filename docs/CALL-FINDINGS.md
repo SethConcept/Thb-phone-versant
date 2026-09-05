@@ -72,12 +72,37 @@ that started answering the line in late August (`call-40`, `call-52`):
 > and this call may be recorded."
 
 California is a two-party-consent state and every one of these calls was
-recorded and transcribed. **This is a legal exposure, not a training nit, and
-it is not ours to decide.** The rule stays in the standard; what changed is that
-the app now reports it as a *policy breach at team level* rather than silently
-failing every individual trainee for something the whole company does. Juan
-should rule on it — either the line goes into the open, or the recording
-practice changes.
+recorded and transcribed. This was surfaced as a team-level policy alert rather
+than an individual fail, because failing every rep for a company-wide practice
+tells you nothing about any of them.
+
+> **RULED, 2026-09 — Juan: the line goes in.**
+
+So it is a scored compliance breach again, in both seats and both directions,
+and an undisclosed call is unsafe no matter how well it went
+(`DISCLOSURE_RULE` in `lib/sales-standard.ts`, `no_disclosure` in
+`DISPO_BREACHES`).
+
+Two things changed to make that stick rather than just be true on paper:
+
+**The open now carries the line the desk already says.** Two thirds of inbound
+calls open *"thank you for calling Twin Home Buyer, this is <name>, how may I
+help you"* — word for word, both reps, unprompted. Nobody has ever said the
+scripted *"are you calling about a property you're thinking about selling"*.
+Teaching a script the team has collectively ignored for six months is why the
+disclosure never got adopted, so `MANDATORY_OPEN` is now their greeting with
+the disclosure inside it:
+
+> "Thank you for calling Twin Home Buyer, this is [your first name] — this call
+> is recorded for quality. How can I help you today?"
+
+The name and the recording line are not optional. The closing question is.
+
+**Outbound calls are covered too.** Two-party consent is about the *recording*,
+not about who dialled, and 22 of the 52 calls are outbound with no disclosure
+anywhere. `OUTBOUND_DISCLOSURE` is the line for those, it is taught in module 2
+and quizzed, and the dispositions opener carries it as well — those calls are
+outbound to licensed agents and are recorded exactly the same way.
 
 ## 3. "Never quote a price" is a desk rule that the company does not follow
 
@@ -188,7 +213,7 @@ Cherry's repeatable moves, in rough order of how often they show up:
 | Finding | Change |
 |---|---|
 | Two roles (#1) | `lib/sales-standard.ts` is now role-aware: `intake` and `acquisition` weightings and rules; `/admin/grade` picks the role. |
-| Recording disclosure (#2) | Reported as a team-level policy alert, not a silent individual fail. |
+| Recording disclosure (#2) | **Ruled by Juan, 2026-09: required.** A scored breach in both seats and both directions; `MANDATORY_OPEN` rewritten around the greeting the desk actually uses; `OUTBOUND_DISCLOSURE` added and taught; dispo opener and rubric carry it too. |
 | Price rules (#3) | Price hard-fails apply to `intake` only; `acquisition` is graded on whether the number was *justified*, not whether it was said. |
 | Real objections (#4) | Six new pressure lines drawn verbatim from the corpus. |
 | Title complexity (#5) | Three new certification sellers built on real ownership structures. |

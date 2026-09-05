@@ -31,7 +31,13 @@
 //     Speed to lead is the one piece a seller sometimes says out loud
 //     (call-06) — when they do, it belongs in the coaching note, not the score.
 
-import { HARD_FAILS, MANDATORY_OPEN, SOURCE_QUESTION, BUYBOX_RULES } from "./academy";
+import {
+  HARD_FAILS,
+  MANDATORY_OPEN,
+  OUTBOUND_DISCLOSURE,
+  SOURCE_QUESTION,
+  BUYBOX_RULES,
+} from "./academy";
 import { SELLER_BRAND } from "./brand";
 
 /** Which seat was on the call. Everything downstream branches on this. */
@@ -242,6 +248,23 @@ export const ROLE_BREACHES: Record<CallRole, string[]> = {
   acquisition: ACQUISITION_BREACHES,
 };
 
+/**
+ * Recording disclosure. Not in HARD_FAILS because that list is about things
+ * the rep SAID; this is about something nobody said.
+ *
+ * The corpus found zero human disclosures in 52 recorded calls, which was
+ * first surfaced as a team-level policy alert rather than an individual fail
+ * — failing every rep for a company-wide practice tells you nothing about any
+ * of them. Juan ruled on 2026-09: the line goes in. So it is a scored
+ * compliance breach for both seats and both directions, and an undisclosed
+ * call is unsafe no matter how well it went.
+ */
+export const DISCLOSURE_RULE = {
+  id: "no_disclosure",
+  label:
+    "Never told the caller the call is recorded. California is a two-party-consent state and every one of these calls is recorded and transcribed.",
+};
+
 export type StandardScore = {
   role: CallRole;
   /** Raw call-skill points out of CALL_SKILL_MAX. */
@@ -298,6 +321,8 @@ ${seatRules}
 ${context ? `\nCONTEXT PROVIDED BY THE REVIEWER: ${context}\n` : ""}
 THE COMPANY'S PHONE RULES:
 - Every inbound call should open close to: "${MANDATORY_OPEN}"
+- Every OUTBOUND call should disclose it too, early: "${OUTBOUND_DISCLOSURE}"
+- The recording disclosure is REQUIRED on every call in either direction. Any natural wording counts ("this call is recorded", "we record our calls for quality", "just so you know I'm recording this"). It does not have to be the first sentence, but it has to happen before anything substantive is collected. Report it honestly in opening.recording_disclosure — the code, not you, decides what that costs.
 - Every call should ask, at some point: "${SOURCE_QUESTION}" (any natural how-did-you-hear phrasing counts)
 - NEVER manufacture urgency, invent statistics, or claim the offer equals what the seller nets.
 - NEVER discuss a mailer/letter/check amount — it must be routed, not explained.
@@ -369,14 +394,12 @@ export function scoreAgainstStandard(parsed: any, role: CallRole = "intake"): St
     })
     .map((b: any) => ({ rule: b.rule, quote: b.quote || undefined }));
 
+  // Ruled a real compliance breach, 2026-09 — see DISCLOSURE_RULE.
+  if (parsed?.opening?.recording_disclosure === false)
+    breaches.push({ rule: DISCLOSURE_RULE.id, quote: undefined });
+
   // Policy, not performance — see StandardScore.policyAlerts.
   const policyAlerts: { id: string; label: string }[] = [];
-  if (parsed?.opening?.recording_disclosure === false)
-    policyAlerts.push({
-      id: "recording_disclosure",
-      label:
-        "No recording disclosure. California is a two-party-consent state and this call was recorded — a company-wide gap, not this rep's mistake.",
-    });
   if (parsed?.opening?.source_question === false)
     policyAlerts.push({
       id: "source_question",
