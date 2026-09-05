@@ -105,6 +105,21 @@ function withMoments(d: any, strengths: string[], recommendations: string[]) {
     recommendations.push(`Should have asked: “${q}”`);
 }
 
+/** Roll several reports up into one weak-spot view, worst category first. */
+export function aggregateBars(reports: ReportData[]) {
+  const acc = new Map<string, { label: string; got: number; max: number; calls: number }>();
+  for (const r of reports) {
+    for (const b of r.bars) {
+      const cur = acc.get(b.label) ?? { label: b.label, got: 0, max: 0, calls: 0 };
+      cur.got += b.got;
+      cur.max += b.max;
+      cur.calls += 1;
+      acc.set(b.label, cur);
+    }
+  }
+  return [...acc.values()].sort((a, b) => a.got / (a.max || 1) - b.got / (b.max || 1));
+}
+
 /**
  * A REAL call graded against the THB Sales Standard (no persona, no draw).
  * Used by the paste-a-transcript grader and, later, by real-call monitoring.

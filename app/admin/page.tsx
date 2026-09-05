@@ -2,6 +2,8 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
+import { buildCallReport, aggregateBars } from "@/lib/call-report";
+import { WeakSpots } from "@/components/trend";
 
 async function addTrainee(formData: FormData) {
   "use server";
@@ -54,6 +56,25 @@ export default async function AdminPage({
   const { data: trainees } = await query;
 
   const base = process.env.NEXT_PUBLIC_APP_URL || "";
+
+  // Team roll-up: where the whole desk is weakest, across every graded
+  // certification call. A category everyone misses is a training-content
+  // problem, not five separate people problems.
+  const { data: allAttempts } = await supabase
+    .from("interviews")
+    .select("exam_meta, scores(*)")
+    .not("exam_meta", "is", null)
+    .order("started_at", { ascending: false })
+    .limit(400);
+  const teamReports = (allAttempts ?? [])
+    .filter((iv: any) => (iv.exam_meta as any)?.kind !== "drill" && (iv.scores ?? []).length > 0)
+    .map((iv: any) => {
+      const latest = [...iv.scores].sort(
+        (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      )[iv.scores.length - 1];
+      return buildCallReport(latest, iv.exam_meta, "admin");
+    });
+  const teamWeak = aggregateBars(teamReports);
 
   const tab = (href: string, label: string, active: boolean) => (
     <Link
@@ -110,6 +131,20 @@ export default async function AdminPage({
           Versant and dispo links never expire — trainees retake until they certify. Difficulty applies to sales practice only.
         </p>
       </div>
+
+      {teamWeak.length > 0 && (
+        <section className="card" style={{ marginBottom: 18 }}>
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <h2 style={{ fontSize: 15, margin: 0 }}>Where the team is weakest</h2>
+            <span className="pill pill-gray">{teamReports.length} graded calls</span>
+          </div>
+          <p className="small muted" style={{ margin: "4px 0 10px" }}>
+            Worst first, across everyone. A category the whole desk misses is a training problem, not five
+            people problems.
+          </p>
+          <WeakSpots rows={teamWeak} />
+        </section>
+      )}
 
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
         <table className="table">

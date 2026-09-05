@@ -4,7 +4,8 @@ import { SELLER_BRAND } from "@/lib/academy";
 import { LEARN_MODULES } from "@/lib/modules";
 import { DISPO_MODULES, DISPO_BRAND, DISPO_GATE } from "@/lib/dispo";
 import { pathState, type ModuleProgressRow } from "@/lib/progress";
-import { buildCallReport, personaLabel, dispoAgentLabel } from "@/lib/call-report";
+import { buildCallReport, aggregateBars, personaLabel, dispoAgentLabel } from "@/lib/call-report";
+import { TrendChart, TrendDelta, WeakSpots, type TrendPoint } from "@/components/trend";
 import ResultsClient, { type CallRow, type Turn } from "./results-client";
 
 // The trainee's own call review — their whole history, the same coach
@@ -191,6 +192,15 @@ export default async function MyResultsPage({
   const trapCleared = passedDraws.some(
     (iv: any) => (iv.exam_meta as any)?.agent === DISPO_GATE.trapId
   );
+  // My progress over time — oldest call on the left
+  const graded = [...rows].reverse().filter((r) => r.kind !== "drill" && r.report);
+  const trendPoints: TrendPoint[] = graded.map((r, i) => ({
+    score: r.report?.score100 ?? 0,
+    when: r.startedAt,
+    label: r.startedAt ? new Date(r.startedAt).toLocaleDateString() : `Call ${i + 1}`,
+  }));
+  const myWeakSpots = aggregateBars(graded.map((r) => r.report!)).slice(0, 5);
+
   const passesNeeded = isDispo ? DISPO_GATE.passesNeeded : GATE_PASSES;
   const gateMet = isDispo
     ? passed.length >= DISPO_GATE.passesNeeded && trapCleared
@@ -251,6 +261,24 @@ export default async function MyResultsPage({
           </span>
         </div>
       </section>
+
+      {trendPoints.length > 1 && (
+        <section className="card cr-stand" style={{ marginTop: 14 }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+            <h2 className="cr-h" style={{ marginBottom: 0 }}>Am I getting better?</h2>
+            <TrendDelta points={trendPoints} />
+          </div>
+          <TrendChart points={trendPoints} height={110} />
+          {myWeakSpots.length > 0 && (
+            <>
+              <h3 style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--muted)", margin: "14px 0 6px" }}>
+                What to work on next
+              </h3>
+              <WeakSpots rows={myWeakSpots} />
+            </>
+          )}
+        </section>
+      )}
 
       {rows.length === 0 ? (
         <div className="card muted" style={{ marginTop: 14 }}>

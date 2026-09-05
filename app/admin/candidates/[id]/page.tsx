@@ -9,6 +9,7 @@ import { DISPO_MODULES, DISPO_GATE } from "@/lib/dispo";
 import { pathState, type ModuleProgressRow } from "@/lib/progress";
 import {
   buildCallReport,
+  aggregateBars,
   verdictClass,
   itemLabel,
   personaLabel,
@@ -16,6 +17,7 @@ import {
   dispoAgentLabel,
 } from "@/lib/call-report";
 import { ReportView } from "@/components/report-view";
+import { TrendChart, TrendDelta, WeakSpots, type TrendPoint } from "@/components/trend";
 
 const STATUSES = ["invited", "interviewed", "scored", "certified", "passed", "failed"];
 
@@ -115,6 +117,21 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
   );
   const dispoGateMet = dispoPasses.length >= DISPO_GATE.passesNeeded && trapCleared;
 
+  // ---- progress over time (oldest → newest) --------------------------
+  const gradedOldestFirst = [...testAttempts]
+    .reverse()
+    .map((iv) => ({ iv, s: latestScore(iv) }))
+    .filter((x) => !!x.s);
+  const graphReports = gradedOldestFirst.map((x) =>
+    buildCallReport(x.s, x.iv.exam_meta as any, "admin")
+  );
+  const trendPoints: TrendPoint[] = gradedOldestFirst.map((x, i) => ({
+    score: graphReports[i].score100 ?? 0,
+    when: x.iv.started_at ?? null,
+    label: x.iv.started_at ? new Date(x.iv.started_at).toLocaleDateString() : `Call ${i + 1}`,
+  }));
+  const weakSpots = aggregateBars(graphReports);
+
   return (
     <main className="fade-in">
       <Link href="/admin" className="small">← All trainees</Link>
@@ -206,6 +223,27 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
           )}
         </div>
       </div>
+
+      {trendPoints.length > 0 && (
+        <section className="card" style={{ marginBottom: 18 }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+            <h2 style={{ fontSize: 16, margin: 0 }}>Progress over time</h2>
+            <TrendDelta points={trendPoints} />
+          </div>
+          <TrendChart points={trendPoints} />
+          {weakSpots.length > 0 && (
+            <>
+              <h3 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--muted)", margin: "16px 0 6px" }}>
+                Weakest areas across {trendPoints.length} graded call{trendPoints.length === 1 ? "" : "s"}
+              </h3>
+              <WeakSpots rows={weakSpots} />
+              <p className="small muted" style={{ margin: "8px 0 0" }}>
+                Worst first. This is what to coach next — and what to pick a practice caller for.
+              </p>
+            </>
+          )}
+        </section>
+      )}
 
       {withAudio.length === 0 && (
         <div className="card muted">No attempts yet. Send them their link.</div>
