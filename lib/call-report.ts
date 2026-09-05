@@ -46,6 +46,8 @@ export type ReportData = {
   extra: string | null;
 };
 
+import { scoreAgainstStandard, CALL_SKILL_MAX, PROCESS_COMPLIANCE } from "./sales-standard";
+
 const ALL_ITEMS = [...PRESSURE_LINES, ...SHORT_ANSWERS, ...MODEL_ITEMS, ...ENDING_ITEMS];
 export const itemLabel = (id: string) => ALL_ITEMS.find((x) => x.id === id)?.seller ?? id;
 
@@ -87,6 +89,56 @@ const roll = (bars: ReportBar[]) => {
 
 const headlineFor = (pass: boolean) =>
   pass ? "Passed — counts toward certification" : "Keep training — see recommendations";
+
+/**
+ * A REAL call graded against the THB Sales Standard (no persona, no draw).
+ * Used by the paste-a-transcript grader and, later, by real-call monitoring.
+ */
+export function buildStandardReport(parsed: any): ReportData {
+  const s = scoreAgainstStandard(parsed);
+  const strengths: string[] = [];
+  const recommendations: string[] = [];
+
+  if (parsed.strongest_moment?.what)
+    strengths.push(
+      `Strongest moment — ${parsed.strongest_moment.what}${parsed.strongest_moment.quote ? `: “${parsed.strongest_moment.quote}”` : ""}`
+    );
+  for (const c of s.categories) {
+    const line = `${c.name} (${c.got}/${c.max})${c.note ? ` — ${c.note}` : ""}`;
+    (c.got === c.max ? strengths : recommendations).push(line);
+  }
+  if (parsed.weakest_moment?.what)
+    recommendations.unshift(
+      `Weakest moment — ${parsed.weakest_moment.what}${parsed.weakest_moment.quote ? `: “${parsed.weakest_moment.quote}”` : ""}`
+    );
+  for (const q of Array.isArray(parsed.questions_missed) ? parsed.questions_missed : [])
+    recommendations.push(`Should have asked: “${q}”`);
+
+  const o = parsed.opening ?? {};
+  const openingBits = [
+    `${o.name_given ? "✓" : "✗"} name`,
+    `${o.recording_disclosure ? "✓" : "✗"} recording disclosure`,
+    `${o.source_question ? "✓" : "✗"} how-did-you-hear`,
+  ].join(" · ");
+
+  return {
+    graded: true,
+    pass: s.safe && s.score100 >= 70,
+    headline: s.safe ? s.band : `${s.band} — compliance breach`,
+    scoreText: `${s.score100} / 100`,
+    score100: s.score100,
+    whoLabel: "Call",
+    who: "Real call · THB Sales Standard",
+    note: openingBits,
+    passRule: `Call skill ${s.points}/${CALL_SKILL_MAX} · ${PROCESS_COMPLIANCE.name} (${PROCESS_COMPLIANCE.points} pts) not scored — needs CRM data`,
+    bars: s.categories.map((c) => ({ label: c.name, got: c.got, max: c.max })),
+    strengths,
+    recommendations,
+    flags: s.breaches.map((b) => ({ label: hardFailLabel(b.rule), quote: b.quote })),
+    coaching: parsed.coaching_note || null,
+    extra: parsed.summary_note || null,
+  };
+}
 
 export function buildCallReport(
   score: any,

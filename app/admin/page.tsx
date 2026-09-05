@@ -75,6 +75,9 @@ export default async function AdminPage({
           {tab("/admin?mode=dispo", "🏷 Dispo", modeFilter === "dispo")}
           {tab("/admin?mode=sales", "📞 Sales practice", modeFilter === "sales")}
           <span className="pill pill-gray">{(trainees ?? []).length}</span>
+          <Link href="/admin/grade" className="pill pill-green" style={{ textDecoration: "none", padding: "6px 14px" }}>
+            🎧 Grade a real call
+          </Link>
           <a href="/academy.html" target="_blank" className="pill pill-blue" style={{ textDecoration: "none", padding: "6px 14px" }}>
             📖 Academy
           </a>
