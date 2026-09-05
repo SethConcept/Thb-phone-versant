@@ -85,6 +85,9 @@ Reply with ONLY valid JSON, no markdown fences:
   "items": [ { "id": "identify", "score": 0, "note": "one specific sentence referencing what they actually did" } ],
   "breaches": [ { "id": "breach id from the list", "quote": "the rep's exact words" } ],
   "buybox_captured": [ "market", "price band", "rehab tolerance", "close speed", "pain point" ],
+  "strongest_moment": { "what": "one line — the single best thing they did", "quote": "their exact words" },
+  "weakest_moment": { "what": "one line — the costliest miss", "quote": "their exact words, or a description of the silence" },
+  "questions_missed": [ "a specific question they should have asked and did not" ],
   "coaching_note": "2-3 sentences of blunt, useful coaching",
   "summary_note": "one line: the call in a sentence"
 }

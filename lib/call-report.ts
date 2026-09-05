@@ -90,6 +90,21 @@ const roll = (bars: ReportBar[]) => {
 const headlineFor = (pass: boolean) =>
   pass ? "Passed — counts toward certification" : "Keep training — see recommendations";
 
+/** The moment highlights and missed questions the ops spec asks for.
+ *  Strongest leads the strengths; weakest leads the recommendations. */
+function withMoments(d: any, strengths: string[], recommendations: string[]) {
+  if (d?.strongest_moment?.what)
+    strengths.unshift(
+      `Strongest moment — ${d.strongest_moment.what}${d.strongest_moment.quote ? `: “${d.strongest_moment.quote}”` : ""}`
+    );
+  if (d?.weakest_moment?.what)
+    recommendations.unshift(
+      `Weakest moment — ${d.weakest_moment.what}${d.weakest_moment.quote ? `: “${d.weakest_moment.quote}”` : ""}`
+    );
+  for (const q of Array.isArray(d?.questions_missed) ? d.questions_missed : [])
+    recommendations.push(`Should have asked: “${q}”`);
+}
+
 /**
  * A REAL call graded against the THB Sales Standard (no persona, no draw).
  * Used by the paste-a-transcript grader and, later, by real-call monitoring.
@@ -160,6 +175,13 @@ export function buildCallReport(
       got: g.ids.reduce((a, rid) => a + scoreOf(rid), 0),
       max: g.ids.length * 2,
     }));
+    const dStrengths = known
+      .filter((x) => Number(x.score) === 2)
+      .map((x) => `${dispoRubricName(x.id)}${x.note ? ` — ${x.note}` : ""}`);
+    const dRecs = known
+      .filter((x) => Number(x.score) < 2)
+      .map((x) => `${dispoRubricName(x.id)} (${x.score}/2)${x.note ? ` — ${x.note}` : ""}`);
+    withMoments(d, dStrengths, dRecs);
     return {
       graded: true,
       pass,
@@ -173,12 +195,8 @@ export function buildCallReport(
       note: score.knockout_reason || null,
       passRule: "Pass needs 21+ with zero boundary breaches",
       bars,
-      strengths: known
-        .filter((x) => Number(x.score) === 2)
-        .map((x) => `${dispoRubricName(x.id)}${x.note ? ` — ${x.note}` : ""}`),
-      recommendations: known
-        .filter((x) => Number(x.score) < 2)
-        .map((x) => `${dispoRubricName(x.id)} (${x.score}/2)${x.note ? ` — ${x.note}` : ""}`),
+      strengths: dStrengths,
+      recommendations: dRecs,
       flags: (Array.isArray(d.breaches) ? d.breaches : []).map((b: any) => ({
         label: dispoBreachDesc(b.id),
         quote: b.quote || undefined,
@@ -218,6 +236,7 @@ export function buildCallReport(
       if (vCrit[c.id] === true) strengths.push(c.label);
       else if (vCrit[c.id] === false) recommendations.push(c.label);
     }
+    withMoments(d, strengths, recommendations);
 
     const bars: ReportBar[] = [
       { label: "The open", got: Number(a.delivery) || 0, max: 5 },

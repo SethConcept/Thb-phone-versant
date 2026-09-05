@@ -147,6 +147,9 @@ Return ONLY valid JSON, no markdown fences:
   "criteria": { ${DRILL_CRITERIA.map((c) => `"${c.id}": true|false`).join(", ")} },
   "persona_note": "one line",
   "hard_fails": [ { "rule": "rule id", "quote": "trainee's exact words" } ],
+  "strongest_moment": { "what": "one line — the single best thing they did", "quote": "their exact words" },
+  "weakest_moment": { "what": "one line — the costliest miss", "quote": "their exact words, or a description of the silence" },
+  "questions_missed": [ "a specific question they should have asked and did not" ],
   "coaching_note": "2-3 sentences: the single biggest thing to fix, and where in the call it showed",
   "summary_note": "one line: would you put this person on the live seller line?"
 }
