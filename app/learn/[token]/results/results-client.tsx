@@ -12,10 +12,13 @@ import { ReportView, type ReportData } from "@/components/report-view";
 
 export type Turn = { role: "agent" | "candidate"; text: string; offset: number; flagged: boolean };
 
+export type PracticeSuggestion = { id: string; label: string; because: string };
+
 export type CallRow = {
   id: string;
   startedAt: string | null;
   who: string;
+  practice?: PracticeSuggestion[];
   kind: "cert" | "practice" | "drill";
   durationSec: number | null;
   score100: number | null;
@@ -48,9 +51,11 @@ const kindLabel = (k: CallRow["kind"]) =>
 export default function ResultsClient({
   calls,
   isDispo,
+  token,
 }: {
   calls: CallRow[];
   isDispo: boolean;
+  token: string;
 }) {
   const [selectedId, setSelectedId] = useState(calls[0]?.id ?? "");
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -199,6 +204,22 @@ export default function ResultsClient({
             <div className={`score-card ${call.report.pass ? "score-pass" : "score-fail"}`}>
               <ReportView data={call.report} />
             </div>
+            {(call.practice ?? []).length > 0 && (
+              <div className="cr-practice">
+                <strong>Practice this</strong>
+                <p className="small muted" style={{ margin: "2px 0 8px" }}>
+                  These callers will make you do the thing you missed. Practice calls are graded but
+                  don&apos;t count toward certification.
+                </p>
+                <div className="row" style={{ gap: 8 }}>
+                  {(call.practice ?? []).map((p) => (
+                    <a key={p.id} className="btn btn-secondary" href={`/interview/${token}`} title={p.because}>
+                      ☎️ {p.label.split(" — ")[0]} — {p.because}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <p className="notice notice-gray small" style={{ marginTop: 12 }}>

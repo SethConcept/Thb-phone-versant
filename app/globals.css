@@ -534,3 +534,10 @@ a.learn-navitem:hover { background: var(--brand-soft); }
   .cr-turn .cr-say { grid-column: 2; }
   .rpt-bar { grid-template-columns: 92px 1fr 48px; }
 }
+
+/* "Practice this" — targeted re-practice after a call that didn't pass */
+.cr-practice {
+  margin-top: 14px; padding: 12px 14px; border-radius: 10px;
+  background: var(--brand-soft); border-left: 3px solid var(--brand);
+}
+.cr-practice .btn { font-size: 13px; padding: 8px 14px; text-decoration: none; }

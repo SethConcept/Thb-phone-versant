@@ -6,6 +6,7 @@ import { DISPO_MODULES, DISPO_BRAND, DISPO_GATE } from "@/lib/dispo";
 import { pathState, type ModuleProgressRow } from "@/lib/progress";
 import { buildCallReport, aggregateBars, personaLabel, dispoAgentLabel } from "@/lib/call-report";
 import { TrendChart, TrendDelta, WeakSpots, type TrendPoint } from "@/components/trend";
+import { suggestPractice } from "@/lib/practice-map";
 import ResultsClient, { type CallRow, type Turn } from "./results-client";
 
 // The trainee's own call review — their whole history, the same coach
@@ -155,10 +156,18 @@ export default async function MyResultsPage({
             ? { label: picked ? "Passed (practice)" : "Passed", tone: "green" }
             : { label: "Keep training", tone: "amber" };
 
+      // A call they didn't pass earns a pointer to callers who drill the
+      // exact weakness — Versant only (dispo agents aren't dialable here).
+      const practice =
+        report && !report.pass && !isDispo
+          ? suggestPractice(report.recommendations, draw?.persona)
+          : [];
+
       return {
         id: iv.id,
         startedAt: iv.started_at ?? null,
         who,
+        practice,
         kind: isDrill ? "drill" : picked ? "practice" : "cert",
         durationSec,
         score100: report?.score100 ?? null,
@@ -286,7 +295,7 @@ export default async function MyResultsPage({
           will show up here.
         </div>
       ) : (
-        <ResultsClient calls={rows} isDispo={isDispo} />
+        <ResultsClient calls={rows} isDispo={isDispo} token={token} />
       )}
 
       <p className="small muted" style={{ marginTop: 18 }}>
