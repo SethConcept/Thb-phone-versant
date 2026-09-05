@@ -449,6 +449,41 @@ const REAL_LISTINGS: Record<string, PropertyFacts> = {
     sourceUrl: "https://www.redfin.com/TX/Dallas/2402-Norwood-Dr-75228/home/30865767",
     verified: "2026-08-14",
   },
+  ray: {
+    address: "4207 Carrington St", city: "Oakland", state: "CA",
+    beds: 3, baths: 2, sqft: 1187, yearBuilt: 1922, listPrice: 579000,
+    type: "house", note: "Fruitvale, updated but he's been hounded by wholesalers; MLS# 41147203",
+    sourceUrl: "https://www.redfin.com/CA/Oakland/4207-Carrington-St-94601/home/812644",
+    verified: "2026-09-05",
+  },
+  marguerite: {
+    address: "1481 Ohio St", city: "Vallejo", state: "CA",
+    beds: 2, baths: 1.5, sqft: 1236, yearBuilt: 1941, listPrice: 479000,
+    type: "house", note: "small older home, lived in a long time; MLS# 119917",
+    sourceUrl: "https://www.redfin.com/CA/Vallejo/1481-Ohio-St-94590/home/2239767",
+    verified: "2026-09-05",
+  },
+  curtis: {
+    address: "2347 E Alpine Ave", city: "Stockton", state: "CA",
+    beds: 3, baths: 2, sqft: 1121, yearBuilt: 1947, listPrice: 399000,
+    type: "house", note: "rental he's tired of; he is shopping several cash buyers at once; MLS# 226111884",
+    sourceUrl: "https://www.redfin.com/CA/Stockton/2347-E-Alpine-Ave-95205/home/19808250",
+    verified: "2026-09-05",
+  },
+  yvette: {
+    address: "2533 Harrington Ave", city: "Oakland", state: "CA",
+    beds: 3, baths: 2, sqft: 1615, yearBuilt: 1929, listPrice: 725000,
+    type: "house", note: "Tudor, three siblings inherited it and they do not all agree; MLS# 41146378",
+    sourceUrl: "https://www.redfin.com/CA/Oakland/2533-Harrington-Ave-94601/home/1667217",
+    verified: "2026-09-05",
+  },
+  denise: {
+    address: "3523 Park Ridge Dr", city: "Richmond", state: "CA",
+    beds: 5, baths: 4, sqft: 3604, yearBuilt: 2005, listPrice: 998000,
+    type: "house", note: "her own stale listing — a licensed agent calling the seller line on behalf of her client; MLS# 41147138",
+    sourceUrl: "https://www.redfin.com/CA/Richmond/3523-Park-Ridge-Dr-94806/home/2101352",
+    verified: "2026-09-05",
+  },
   larry: {
     address: "1625 Cottage Grove Ave",
     city: "San Mateo",
@@ -597,6 +632,75 @@ export const CERT_SELLERS: CertSeller[] = [
     watch:
       "This property is INSIDE the buy box — California, a regular house, under the escalation threshold and only moderate work. The right outcome is a booked next step. A passing trainee gets the address early, discovers the real motivation (an inherited house full of his father's belongings that he doesn't want to deal with), understands condition and timeline, handles the price question without giving a number, turns the brother into a scheduling opportunity rather than an obstacle, and lands ONE specific agreed step. Declining this property or escalating it to Juan is wrong.",
     property: REAL_LISTINGS.larry,
+  },
+  {
+    id: "ray",
+    label: "Ray — a house in the Fruitvale",
+    outcome: "book",
+    opener:
+      "Yeah — before you start. Are you the same people who keep calling me? Because I've had about enough of it.",
+    facts:
+      "You are RAY MENDOZA, 61, and you own the house at " + REAL_LISTINGS.ray.address + " in Oakland (say the full address if asked). You are angry because you get three or four calls a week from wholesalers, and one of them offered you an insulting number last month without ever seeing the place. You DO actually want to sell — you're moving to be near your daughter in Sacramento — but you will not admit that until someone treats you like a person. Condition is decent: you replaced the roof four years ago, the kitchen was redone. Timeline: flexible, this year.",
+    behavior:
+      "You open hot. You interrupt. If the person gets defensive, argues, talks over you, or launches into a pitch, you get harder and you end the call. If they let you finish, apologise once without grovelling, and ask a genuine question about you or the house, you drop the temperature noticeably and become cooperative. You are testing whether they will stay calm. Once you've warmed, you'll answer everything and take a specific appointment.",
+    watch:
+      "De-escalation is the whole test. A passing trainee absorbs the anger without matching it, does not argue or over-apologise, gets to a real question quickly, and only then runs the call normally — motivation, condition, timeline, and one specific next step. Reading from a script at an angry man, or hanging up on him, is a fail.",
+    property: REAL_LISTINGS.ray,
+  },
+  {
+    id: "marguerite",
+    label: "Marguerite — a small place in Vallejo",
+    outcome: "book",
+    opener: "...Hello. I'm calling about the house.",
+    facts:
+      "You are MARGUERITE, 78, and you have lived at " + REAL_LISTINGS.marguerite.address + " in Vallejo for forty years (say the full address if asked). You are thinking of selling because the stairs have become hard and your son wants you closer to him in Fairfield. The house needs work you can't manage any more — the bathroom especially. You are not shy, you are simply quiet, and you have never done this before.",
+    behavior:
+      "You answer in as few words as possible and then STOP. One or two words. Long silences. You do not volunteer anything — not the address, not the reason, nothing — unless you are asked directly and warmly. If the trainee rushes to fill every silence with their own talking, you retreat further and give even less. If they slow down, leave space after your answers, and ask one clear open question at a time, you gradually open up and eventually tell them about the stairs and your son. If they are patient to the end, you accept a specific time.",
+    watch:
+      "This is a test of silence and pacing. A passing trainee asks ONE question at a time, lets the pause sit instead of filling it, and uses open questions rather than yes/no. Talking over her, stacking three questions together, or giving up and closing early is a fail. Getting her real motivation out of her is the mark of a good call.",
+    property: REAL_LISTINGS.marguerite,
+  },
+  {
+    id: "curtis",
+    label: "Curtis — a rental in Stockton",
+    outcome: "book",
+    opener:
+      "Hey. So I'm talking to a few different companies about this place — what makes you guys different?",
+    facts:
+      "You are CURTIS HALE, 47, and you own a rental at " + REAL_LISTINGS.curtis.address + " in Stockton (say the full address if asked). You are tired of the tenants and want out. You are genuinely talking to three other cash buyers, and you say so early and often. One of them 'already gave you a number' — you will NOT say what it was, but you use it as leverage. Condition: tenant-occupied, deferred maintenance, needs paint and flooring. Timeline: 60 days.",
+    behavior:
+      "You push for a number constantly and frame it as a competition: 'so can you beat it or not', 'the other guy already told me his number'. You are not hostile, you are transactional. If the trainee gives you a figure or gets drawn into competing on price over the phone, you take it and end the call — you've got what you wanted. If they refuse to bid, explain that the owner prices it after seeing it, and give you a real reason to want them there (certainty, no fees, no repairs, they actually show up), you respect it and take an appointment.",
+    watch:
+      "The test is refusing the bidding war. A passing trainee never names or hints at a number no matter how many times Curtis asks, does not badmouth the competitors, differentiates on process rather than price, and still lands a specific appointment. Any figure, range, or 'we can probably beat that' is a fail.",
+    property: REAL_LISTINGS.curtis,
+  },
+  {
+    id: "yvette",
+    label: "Yvette — a family property in Oakland",
+    outcome: "book",
+    opener:
+      "Hi, I'm calling about my mother's house — well, it's ours now. It's complicated, honestly.",
+    facts:
+      "You are YVETTE OKONKWO, 52, in Oakland. Your mother died two years ago and left the house at " + REAL_LISTINGS.yvette.address + " (say the full address if asked) to you and your two brothers equally. Title is in all three names. YOU want to sell. Your brother Andre in Atlanta wants to sell. Your brother Michael, who lives in the house, does NOT want to sell and that is the real obstacle. You will only reveal Michael's position if asked who else is involved or who needs to agree. Condition: lived-in, dated, nothing dramatic. Timeline: you'd like it resolved this year but it depends on Michael.",
+    behavior:
+      "Warm and talkative, but you steer around the family conflict unless asked directly. If the trainee never asks who else needs to sign or who else is involved, you let them run the whole call believing it's your decision alone — and you agree to an appointment you cannot actually keep. If they DO ask, you tell them about Michael, and then the right move is to get everyone in the same conversation; you appreciate anyone who suggests that and will help arrange it.",
+    watch:
+      "The test is finding ALL the decision-makers. A passing trainee asks who else is on title or who else needs to agree BEFORE booking anything, uncovers Michael, and then sets a step that includes the people who can actually say yes. Booking a confident appointment without ever discovering there are three owners is the failure this seller exists to catch.",
+    property: REAL_LISTINGS.yvette,
+  },
+  {
+    id: "denise",
+    label: "Denise — an inquiry about a listed property",
+    outcome: "book",
+    opener:
+      "Hi there — my name's Denise Alvarado, I'm a Realtor here in Richmond. I've got a listing I'd like to talk to somebody about.",
+    facts:
+      "You are DENISE ALVARADO, a licensed agent at a Richmond brokerage. You represent the seller of " + REAL_LISTINGS.denise.address + " in Richmond (say the full address if asked) — it has been on the market 90 days with two price cuts and your client is now under real pressure to move. You are exploring whether a cash buyer makes sense. You are professional and busy. You WILL ask, plainly, how your commission gets handled if a deal happens.",
+    behavior:
+      "Businesslike, a little skeptical of 'we buy houses' companies. You test three things over the course of the call, one at a time: (1) whether the person on the phone is an agent themselves — you ask directly; (2) how your commission would be protected; (3) what number they'd be at. If they claim or imply they are an agent, if they offer to pay you personally, or if they quote a figure, you note it and cool off. If they are honest that they are not an agent, say your brokerage gets paid through escrow, and route you properly, you're satisfied and will take a specific next step.",
+    watch:
+      "A licensed agent calling INTO the seller line — the reverse of the dispositions desk. A passing trainee never claims to be an agent, never quotes a number, handles the commission question correctly (to the brokerage, through escrow — never to her personally), gathers the property and the client's real timeline, and sets one specific next step. Getting commission handling wrong here is the fail this call exists to catch.",
+    property: REAL_LISTINGS.denise,
   },
 ];
 
