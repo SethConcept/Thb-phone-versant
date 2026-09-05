@@ -12,6 +12,11 @@ import ResultsClient, { type CallRow, type Turn } from "./results-client";
 // identity (same rule as every other /learn page), and it only ever reads
 // their own calls.
 
+// Always render per request: this page carries one trainee's recordings and
+// transcripts, so nothing about it may be cached or shared between requests.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const GATE_PASSES = 12;
 const GATE_TYPES = 6;
 
@@ -83,21 +88,43 @@ export default async function MyResultsPage({
         audioUrl = data?.signedUrl ?? null;
       }
 
-      // transcript → offsets from the first turn, flagging quoted moments
+      // Transcript. Newer calls store `offset` (seconds from the start of the
+      // recording) on each turn; older ones only have wall-clock `ts`, so fall
+      // back to measuring from the first turn.
       const raw: any[] = Array.isArray(iv.transcript) ? iv.transcript : [];
       const firstTs = raw.length ? Number(raw[0].ts) || 0 : 0;
       const quotes = (report?.flags ?? [])
         .map((f) => (f.quote || "").toLowerCase().replace(/[^a-z0-9 ]/g, "").trim())
         .filter((q) => q.length > 8);
-      const transcript: Turn[] = raw.map((t) => {
-        const text = String(t.text ?? "");
-        const norm = text.toLowerCase().replace(/[^a-z0-9 ]/g, "");
+
+      const cleaned = raw
+        .map((t) => ({
+          role: (t.role === "agent" ? "agent" : "candidate") as Turn["role"],
+          text: String(t.text ?? "").trim(),
+          offset:
+            typeof t.offset === "number" && Number.isFinite(t.offset)
+              ? Math.max(0, Math.round(t.offset))
+              : Math.max(0, Math.round(((Number(t.ts) || firstTs) - firstTs) / 1000)),
+        }))
+        // drop ASR noise stored by older sessions (stray non-Latin glyphs)
+        .filter((t) => t.text.replace(/[^a-zA-Z0-9]/g, "").length >= 2);
+
+      // Merge consecutive turns from the same speaker into one block —
+      // the model flushes in fragments and it reads badly split up.
+      const merged: { role: Turn["role"]; text: string; offset: number }[] = [];
+      for (const t of cleaned) {
+        const prev = merged[merged.length - 1];
+        if (prev && prev.role === t.role && t.offset - prev.offset < 30)
+          prev.text = `${prev.text} ${t.text}`.replace(/\s+/g, " ");
+        else merged.push({ ...t });
+      }
+
+      const transcript: Turn[] = merged.map((t) => {
+        const norm = t.text.toLowerCase().replace(/[^a-z0-9 ]/g, "");
         return {
-          role: t.role === "agent" ? "agent" : "candidate",
-          text,
-          offset: Math.max(0, Math.round(((Number(t.ts) || firstTs) - firstTs) / 1000)),
+          ...t,
           flagged:
-            t.role !== "agent" &&
+            t.role === "candidate" &&
             quotes.some((q) => norm.includes(q.slice(0, 40)) || q.includes(norm.slice(0, 40))),
         };
       });

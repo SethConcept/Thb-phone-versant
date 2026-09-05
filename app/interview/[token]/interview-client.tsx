@@ -28,7 +28,14 @@ import { GoogleGenAI, Modality } from "@google/genai";
 // property registry (addresses, park/manufactured flags) to the browser.
 import { SELLER_BRAND } from "@/lib/brand";
 
-type Turn = { role: "agent" | "candidate"; text: string; ts: number };
+type Turn = { role: "agent" | "candidate"; text: string; ts: number; offset?: number };
+
+// Live ASR emits junk when it hears breath, echo, or room noise — usually a
+// stray glyph in another script ("응.", "스. 아. 네."). Strip a turn to Latin
+// letters and digits; if almost nothing survives, it was never speech.
+function isAsrNoise(text: string) {
+  return text.replace(/[^a-zA-Z0-9]/g, "").length < 2;
+}
 type Stage =
   | "consent" | "miccheck" | "desk" | "ringing"
   | "connecting" | "live" | "uploading" | "done" | "error";
@@ -171,6 +178,7 @@ export default function InterviewClient({
   const outboundRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const transcriptRef = useRef<Turn[]>([]);
+  const recStartRef = useRef<number>(0); // recording t0, for transcript offsets
   const sessionRef = useRef<any>(null);
   const interviewIdRef = useRef<string>("");
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -365,6 +373,9 @@ export default function InterviewClient({
       recorder.ondataavailable = (e) => e.data.size > 0 && chunksRef.current.push(e.data);
       recorder.start(1000);
       recorderRef.current = recorder;
+      // t0 for the transcript: every turn stores its offset in seconds from
+      // here, so playback and transcript line up exactly on the review page.
+      recStartRef.current = Date.now();
 
       let playhead = 0;
       function playPcm(base64: string) {
@@ -394,17 +405,37 @@ export default function InterviewClient({
 
       let currentAgent = "";
       let currentCandidate = "";
-      const pushTurn = (role: Turn["role"], text: string) => {
+      // when each side STARTED talking — not when the buffer was flushed, so
+      // the transcript keeps real chronology instead of stamping both sides
+      // with the same flush time
+      let agentStart = 0;
+      let candidateStart = 0;
+
+      const pushTurn = (role: Turn["role"], text: string, ts: number) => {
         const t = text.trim();
-        if (t) transcriptRef.current.push({ role, text: t, ts: Date.now() });
+        if (!t || isAsrNoise(t)) return;
+        transcriptRef.current.push({
+          role,
+          text: t,
+          ts,
+          offset: Math.max(0, (ts - (recStartRef.current || ts)) / 1000),
+        });
       };
       // flush any partial turn buffers — called on turn completion AND when
-      // the session ends, so a mid-goodbye "End" click doesn't lose words
+      // the session ends, so a mid-goodbye "End" click doesn't lose words.
+      // Pending turns go in the order they were actually spoken.
       flushTurnsRef.current = () => {
-        pushTurn("candidate", currentCandidate);
-        pushTurn("agent", currentAgent);
+        const pending: { role: Turn["role"]; text: string; ts: number }[] = [];
+        if (currentCandidate.trim())
+          pending.push({ role: "candidate", text: currentCandidate, ts: candidateStart || Date.now() });
+        if (currentAgent.trim())
+          pending.push({ role: "agent", text: currentAgent, ts: agentStart || Date.now() });
+        pending.sort((a, b) => a.ts - b.ts);
+        for (const p of pending) pushTurn(p.role, p.text, p.ts);
         currentAgent = "";
         currentCandidate = "";
+        agentStart = 0;
+        candidateStart = 0;
       };
 
       const session = await ai.live.connect({
@@ -428,8 +459,14 @@ export default function InterviewClient({
               if (part.inlineData?.data) playPcm(part.inlineData.data);
             }
             // transcriptions
-            if (sc.outputTranscription?.text) currentAgent += sc.outputTranscription.text;
-            if (sc.inputTranscription?.text) currentCandidate += sc.inputTranscription.text;
+            if (sc.outputTranscription?.text) {
+              if (!currentAgent) agentStart = Date.now();
+              currentAgent += sc.outputTranscription.text;
+            }
+            if (sc.inputTranscription?.text) {
+              if (!currentCandidate) candidateStart = Date.now();
+              currentCandidate += sc.inputTranscription.text;
+            }
             if (sc.turnComplete) {
               const upperAgent = currentAgent.toUpperCase();
               const agentSaidComplete = END_MARKERS.some((m) => upperAgent.includes(m));
