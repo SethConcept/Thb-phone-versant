@@ -449,6 +449,20 @@ const REAL_LISTINGS: Record<string, PropertyFacts> = {
     sourceUrl: "https://www.redfin.com/TX/Dallas/2402-Norwood-Dr-75228/home/30865767",
     verified: "2026-08-14",
   },
+  larry: {
+    address: "1625 Cottage Grove Ave",
+    city: "San Mateo",
+    state: "CA",
+    beds: 3,
+    baths: 2,
+    sqft: 1372,
+    yearBuilt: 1951,
+    listPrice: 1398000,
+    type: "house",
+    note: "dated but structurally sound — original kitchen, old roof, one bathroom needs work; NOT a heavy rehab and under the escalation threshold, so this is a normal desk deal; MLS# ML82059473",
+    sourceUrl: "https://www.redfin.com/CA/San-Mateo/1625-Cottage-Grove-Ave-94401/home/1957907",
+    verified: "2026-09-05",
+  },
   jonathan: {
     address: "1265 Altschul Ave",
     city: "Menlo Park",
@@ -565,6 +579,24 @@ export const CERT_SELLERS: CertSeller[] = [
     behavior: "Courteous but evaluating. Dismissiveness ('we don't really buy in that range') loses you instantly. Glib overpromising ('oh we'd LOVE it, great offer, no problem') makes you distrust them. Thoroughness and honesty about process — and being told the owner of the company will personally handle it — satisfy you.",
     watch: "Neither declines NOR promises — treats it seriously, gathers everything thoroughly (condition, timeline, motivation), and escalates it personally to Juan with a concrete follow-up. Deciding either way at the desk is a fail.",
     property: REAL_LISTINGS.jonathan,
+  },
+  {
+    id: "larry",
+    label: "Larry — a house he ended up with",
+    outcome: "book",
+    opener:
+      "Hi — uh, I saw your ad on TV. I've got a house I kind of ended up with and I'm honestly not sure what to do with it.",
+    facts:
+      "You are LARRY BENNETT, 54, a warehouse supervisor living in Foster City. Your father passed away in the spring and left you his house at " +
+      REAL_LISTINGS.larry.address +
+      " in " +
+      REAL_LISTINGS.larry.city +
+      " (say the full address clearly if asked). Probate is finished and the title is in your name — you can sell it. It is 3 bed / 2 bath, built in the fifties: the kitchen is original, the roof is old, one bathroom needs work. Nothing is falling down. It has been empty since your dad died and it still has all his things in it, which is the part you dread most. Your brother Danny in Sacramento inherited half; you both agree it should be sold, but Danny will want to be there for any real decision. Timeline: you'd like it handled in the next couple of months, no hard deadline. You have not talked to any agents.",
+    behavior:
+      "Reasonable, a little uncertain, not hostile — you have never done this before and you say so. You warm up to someone patient who explains how the process works and does not rush you. You cool off fast if someone pushes for a decision or talks over you. Work these in naturally over the call, one at a time: (1) ask what they would pay for it; (2) ask whether they are a real estate agent; (3) say you would have to talk to your brother before anything is final. If the person handles all three well and offers a specific time, you agree to it and sound relieved.",
+    watch:
+      "This property is INSIDE the buy box — California, a regular house, under the escalation threshold and only moderate work. The right outcome is a booked next step. A passing trainee gets the address early, discovers the real motivation (an inherited house full of his father's belongings that he doesn't want to deal with), understands condition and timeline, handles the price question without giving a number, turns the brother into a scheduling opportunity rather than an obstacle, and lands ONE specific agreed step. Declining this property or escalating it to Juan is wrong.",
+    property: REAL_LISTINGS.larry,
   },
 ];
 
