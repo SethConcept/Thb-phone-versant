@@ -24,7 +24,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { GoogleGenAI, Modality } from "@google/genai";
-import { SELLER_BRAND } from "@/lib/academy";
+// Brand only — never import lib/academy here: it would ship the seller
+// property registry (addresses, park/manufactured flags) to the browser.
+import { SELLER_BRAND } from "@/lib/brand";
 
 type Turn = { role: "agent" | "candidate"; text: string; ts: number };
 type Stage =

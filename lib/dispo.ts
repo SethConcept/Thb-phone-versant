@@ -9,7 +9,10 @@
 // sell. The dispo rep calls licensed agents and investors to move that
 // contract, and must never act like an agent while doing it.
 
-export const DISPO_BRAND = "Equity Track";
+// Brand lives in lib/brand.ts so browser code can import it WITHOUT pulling
+// this module (and the agent persona scripts) into the client bundle.
+export { DISPO_BRAND } from "./brand";
+import { DISPO_BRAND } from "./brand";
 
 // ---------------------------------------------------------------------------
 // Learning modules (d1–d7)

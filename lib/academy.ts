@@ -2,7 +2,10 @@
 // training exam. Ported from the Phone Academy courseware (public/academy.html);
 // keep the two in sync if the rules change.
 
-export const SELLER_BRAND = "Twin Home Buyer";
+// Brand lives in lib/brand.ts so browser code can import it WITHOUT pulling
+// this module (and the property registry) into the client bundle.
+export { SELLER_BRAND } from "./brand";
+import { SELLER_BRAND } from "./brand";
 export const OFFICE_LINE = "Our office is in San Carlos — 170 Glenn Way.";
 
 // ---------------------------------------------------------------------------

@@ -4,15 +4,18 @@ import { SELLER_BRAND } from "@/lib/academy";
 import { LEARN_MODULES } from "@/lib/modules";
 import { DISPO_MODULES, DISPO_BRAND, DISPO_GATE } from "@/lib/dispo";
 import { pathState, type ModuleProgressRow } from "@/lib/progress";
-import { CallReport, verdictClass } from "@/components/call-report";
+import { buildCallReport, personaLabel, dispoAgentLabel } from "@/lib/call-report";
+import ResultsClient, { type CallRow, type Turn } from "./results-client";
 
-// The trainee's own results — their whole call history, the same coach
-// reports their reviewer sees, plus where they stand on certification.
-// Token-authenticated: their link IS their identity (same rule as every
-// other /learn page). Only ever shows THEIR OWN calls.
+// The trainee's own call review — their whole history, the same coach
+// reports their reviewer sees. Token-authenticated: their link IS their
+// identity (same rule as every other /learn page), and it only ever reads
+// their own calls.
 
 const GATE_PASSES = 12;
 const GATE_TYPES = 6;
+
+const shortName = (label: string) => label.split(" — ")[0];
 
 export default async function MyResultsPage({
   params,
@@ -56,20 +59,6 @@ export default async function MyResultsPage({
   const path = pathState((progressRows ?? []) as ModuleProgressRow[], modules);
   const modulesDone = modules.filter((m) => path.moduleComplete(m.id)).length;
 
-  // Signed URLs so they can listen back to their own calls
-  const withAudio = await Promise.all(
-    (interviews ?? []).map(async (iv) => {
-      let signedUrl: string | null = null;
-      if (iv.audio_url) {
-        const { data } = await db.storage
-          .from("interview-audio")
-          .createSignedUrl(iv.audio_url, 3600);
-        signedUrl = data?.signedUrl ?? null;
-      }
-      return { ...iv, signedUrl };
-    })
-  );
-
   const latestScore = (iv: any) => {
     const arr = (iv.scores ?? [])
       .slice()
@@ -77,175 +66,177 @@ export default async function MyResultsPage({
     return arr[arr.length - 1];
   };
 
-  const calls = withAudio.filter((iv) => (iv.exam_meta as any)?.kind !== "drill");
-  const drills = withAudio.filter((iv) => (iv.exam_meta as any)?.kind === "drill");
-  const gateCalls = calls.filter((iv) => !(iv.exam_meta as any)?.picked);
-  const passed = gateCalls.filter((iv) => latestScore(iv)?.verdict === "PASS");
+  // ---- build one row per call (newest first) -------------------------
+  const rows: CallRow[] = await Promise.all(
+    (interviews ?? []).map(async (iv: any) => {
+      const draw = iv.exam_meta as any;
+      const isDrill = draw?.kind === "drill";
+      const picked = !!draw?.picked;
+      const s = latestScore(iv);
+      const report = s && !isDrill ? buildCallReport(s, draw, "trainee") : null;
 
-  // Gate progress (mode-specific)
-  const sellersPassed = new Set(
-    passed.map((iv) => (iv.exam_meta as any)?.persona).filter(Boolean)
+      let audioUrl: string | null = null;
+      if (iv.audio_url) {
+        const { data } = await db.storage
+          .from("interview-audio")
+          .createSignedUrl(iv.audio_url, 3600);
+        audioUrl = data?.signedUrl ?? null;
+      }
+
+      // transcript → offsets from the first turn, flagging quoted moments
+      const raw: any[] = Array.isArray(iv.transcript) ? iv.transcript : [];
+      const firstTs = raw.length ? Number(raw[0].ts) || 0 : 0;
+      const quotes = (report?.flags ?? [])
+        .map((f) => (f.quote || "").toLowerCase().replace(/[^a-z0-9 ]/g, "").trim())
+        .filter((q) => q.length > 8);
+      const transcript: Turn[] = raw.map((t) => {
+        const text = String(t.text ?? "");
+        const norm = text.toLowerCase().replace(/[^a-z0-9 ]/g, "");
+        return {
+          role: t.role === "agent" ? "agent" : "candidate",
+          text,
+          offset: Math.max(0, Math.round(((Number(t.ts) || firstTs) - firstTs) / 1000)),
+          flagged:
+            t.role !== "agent" &&
+            quotes.some((q) => norm.includes(q.slice(0, 40)) || q.includes(norm.slice(0, 40))),
+        };
+      });
+
+      const durationSec =
+        iv.started_at && iv.ended_at
+          ? Math.max(0, (new Date(iv.ended_at).getTime() - new Date(iv.started_at).getTime()) / 1000)
+          : transcript.length
+            ? transcript[transcript.length - 1].offset
+            : null;
+
+      const who = isDispo
+        ? shortName(dispoAgentLabel(draw?.agent))
+        : draw?.persona
+          ? shortName(personaLabel(draw.persona))
+          : isDrill
+            ? "Drill coach"
+            : "Unknown caller";
+
+      const outcome: CallRow["outcome"] = isDrill
+        ? { label: "Coached practice", tone: "gray" }
+        : !s
+          ? iv.completed
+            ? { label: "Not graded yet", tone: "gray" }
+            : { label: "Ended early", tone: "gray" }
+          : report?.pass
+            ? { label: picked ? "Passed (practice)" : "Passed", tone: "green" }
+            : { label: "Keep training", tone: "amber" };
+
+      return {
+        id: iv.id,
+        startedAt: iv.started_at ?? null,
+        who,
+        kind: isDrill ? "drill" : picked ? "practice" : "cert",
+        durationSec,
+        score100: report?.score100 ?? null,
+        outcome,
+        audioUrl,
+        transcript,
+        report,
+        ungraded: isDrill
+          ? "Drill-room runs are coached practice — the feedback happened live on the call, nothing is scored."
+          : !s
+            ? iv.completed
+              ? "This call is saved and waiting to be graded."
+              : "This call ended early, so it wasn't graded."
+            : null,
+      } as CallRow;
+    })
   );
-  const trapCleared = passed.some((iv) => (iv.exam_meta as any)?.agent === DISPO_GATE.trapId);
+
+  // ---- certification gate -------------------------------------------
+  const gateRows = rows.filter((r) => r.kind === "cert");
+  const passed = gateRows.filter((r) => r.outcome.tone === "green");
+  const passedDraws = (interviews ?? []).filter(
+    (iv: any) =>
+      (iv.exam_meta as any)?.kind !== "drill" &&
+      !(iv.exam_meta as any)?.picked &&
+      latestScore(iv)?.verdict === "PASS"
+  );
+  const sellersPassed = new Set(
+    passedDraws.map((iv: any) => (iv.exam_meta as any)?.persona).filter(Boolean)
+  );
+  const trapCleared = passedDraws.some(
+    (iv: any) => (iv.exam_meta as any)?.agent === DISPO_GATE.trapId
+  );
   const passesNeeded = isDispo ? DISPO_GATE.passesNeeded : GATE_PASSES;
   const gateMet = isDispo
     ? passed.length >= DISPO_GATE.passesNeeded && trapCleared
     : passed.length >= GATE_PASSES && sellersPassed.size >= GATE_TYPES;
 
   return (
-    <div className="candidate-bg">
-      <main className="card fade-in" style={{ maxWidth: 860, width: "100%", textAlign: "left" }}>
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            <h1 style={{ fontSize: 24, margin: 0 }}>📊 My results</h1>
-            <p className="small muted" style={{ margin: "4px 0 0" }}>
-              {trainee.full_name} · {brand}
-            </p>
-          </div>
+    <div className="cr-page">
+      <header className="cr-top">
+        <div>
+          <h1>📊 My results</h1>
+          <p className="small muted" style={{ margin: "2px 0 0" }}>
+            {trainee.full_name} · {brand} · every call, with the recording and the coach&apos;s notes
+          </p>
+        </div>
+        <div className="row" style={{ gap: 8 }}>
+          {path.allComplete && (
+            <Link className="btn" href={`/interview/${token}`}>
+              ☎️ {isDispo ? "Dial another call" : "Take another call"}
+            </Link>
+          )}
           <Link className="btn btn-secondary" href={`/learn/${token}`}>← My learning path</Link>
         </div>
+      </header>
 
-        {/* Where they stand */}
-        <section className="card" style={{ marginTop: 16 }}>
-          <h2 style={{ fontSize: 16, margin: "0 0 10px" }}>Where I stand</h2>
-          <div className="row" style={{ gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-            {modules.map((m) => {
-              const row = path.byModule[m.id];
-              const complete = path.moduleComplete(m.id);
-              return (
-                <span
-                  key={m.id}
-                  className={`pill ${complete ? "pill-green" : row ? "pill-amber" : "pill-gray"}`}
-                  title={m.title}
-                >
-                  {complete ? "✓ " : ""}{isDispo ? "D" : "M"}{m.num}
-                </span>
-              );
-            })}
-            <span className="pill pill-gray">{modulesDone}/{modules.length} modules</span>
-          </div>
-          <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
-            <span className={`pill ${passed.length >= passesNeeded ? "pill-green" : "pill-gray"}`}>
-              Calls passed: {passed.length} / {passesNeeded}
-            </span>
-            {isDispo ? (
-              <span className={`pill ${trapCleared ? "pill-green" : "pill-gray"}`}>
-                {trapCleared ? "✓ Toughest agent cleared" : "Toughest agent not cleared yet"}
+      <section className="card cr-stand">
+        <h2 className="cr-h">Where I stand</h2>
+        <div className="row" style={{ gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+          {modules.map((m) => {
+            const row = path.byModule[m.id];
+            const complete = path.moduleComplete(m.id);
+            return (
+              <span
+                key={m.id}
+                className={`pill ${complete ? "pill-green" : row ? "pill-amber" : "pill-gray"}`}
+                title={m.title}
+              >
+                {complete ? "✓ " : ""}{isDispo ? "D" : "M"}{m.num}
               </span>
-            ) : (
-              <span className={`pill ${sellersPassed.size >= GATE_TYPES ? "pill-green" : "pill-gray"}`}>
-                Different sellers passed: {sellersPassed.size} / {GATE_TYPES}
-              </span>
-            )}
-            <span className={`pill ${trainee.status === "certified" ? "pill-green" : gateMet ? "pill-green" : "pill-amber"}`}>
-              {trainee.status === "certified"
-                ? "🏅 Certified"
-                : gateMet
-                  ? "✓ Ready to certify"
-                  : "In training"}
+            );
+          })}
+          <span className="pill pill-gray">{modulesDone}/{modules.length} modules</span>
+        </div>
+        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+          <span className={`pill ${passed.length >= passesNeeded ? "pill-green" : "pill-gray"}`}>
+            Calls passed: {passed.length} / {passesNeeded}
+          </span>
+          {isDispo ? (
+            <span className={`pill ${trapCleared ? "pill-green" : "pill-gray"}`}>
+              {trapCleared ? "✓ Toughest agent cleared" : "Toughest agent not cleared yet"}
             </span>
-          </div>
-          {path.allComplete && (
-            <p style={{ marginTop: 12, marginBottom: 0 }}>
-              <Link className="btn" href={`/interview/${token}`}>
-                ☎️ {isDispo ? "Dial another call" : "Take another call"}
-              </Link>
-            </p>
+          ) : (
+            <span className={`pill ${sellersPassed.size >= GATE_TYPES ? "pill-green" : "pill-gray"}`}>
+              Different sellers passed: {sellersPassed.size} / {GATE_TYPES}
+            </span>
           )}
-        </section>
+          <span className={`pill ${trainee.status === "certified" || gateMet ? "pill-green" : "pill-amber"}`}>
+            {trainee.status === "certified" ? "🏅 Certified" : gateMet ? "✓ Ready to certify" : "In training"}
+          </span>
+        </div>
+      </section>
 
-        {/* Every graded call */}
-        <h2 style={{ fontSize: 16, margin: "22px 0 6px" }}>
-          My calls {calls.length > 0 && <span className="small muted">({calls.length})</span>}
-        </h2>
+      {rows.length === 0 ? (
+        <div className="card muted" style={{ marginTop: 14 }}>
+          No calls yet. Finish your modules and take your first certification call — your results
+          will show up here.
+        </div>
+      ) : (
+        <ResultsClient calls={rows} isDispo={isDispo} />
+      )}
 
-        {calls.length === 0 && (
-          <div className="card muted">
-            No calls yet. Finish your modules and take your first certification call — your
-            results will show up here.
-          </div>
-        )}
-
-        {calls.map((iv, idx) => {
-          const s = latestScore(iv);
-          const draw = iv.exam_meta as any;
-          const practice = !!draw?.picked;
-          return (
-            <section key={iv.id} className="card" style={{ marginTop: 14 }}>
-              <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-                <h3 style={{ fontSize: 15, margin: 0 }}>
-                  {practice ? "📞 Practice call" : "🏁 Certification call"} {calls.length - idx}
-                  <span className="muted small" style={{ fontWeight: 400 }}>
-                    {" "}· {iv.started_at ? new Date(iv.started_at).toLocaleString() : ""}
-                  </span>
-                </h3>
-                {practice && (
-                  <span className="pill pill-blue">practice — doesn&apos;t count</span>
-                )}
-              </div>
-
-              {iv.signedUrl && (
-                <>
-                  <p className="small muted" style={{ margin: "8px 0 4px" }}>
-                    🎧 Listen back to yourself — it&apos;s the fastest way to improve.
-                  </p>
-                  <audio controls src={iv.signedUrl} style={{ width: "100%" }} />
-                </>
-              )}
-
-              {s ? (
-                <div className={`score-card ${verdictClass(s.verdict)}`}>
-                  <CallReport score={s} draw={draw} audience="trainee" />
-                </div>
-              ) : (
-                <p className="notice notice-gray small" style={{ marginTop: 8 }}>
-                  {iv.completed
-                    ? "This call is saved and waiting to be graded."
-                    : "This call ended early, so it wasn't graded."}
-                </p>
-              )}
-
-              {Array.isArray(iv.transcript) && (iv.transcript as any[]).length > 0 && (
-                <details style={{ marginTop: 10 }}>
-                  <summary style={{ cursor: "pointer", fontWeight: 600, fontSize: 14 }}>
-                    Read the transcript
-                  </summary>
-                  <div className="small" style={{ marginTop: 8 }}>
-                    {(iv.transcript as any[]).map((t, i) => (
-                      <p key={i} style={{ margin: "5px 0" }}>
-                        <strong style={{ color: t.role === "agent" ? "var(--brand-ink)" : "var(--ink)" }}>
-                          {t.role === "agent" ? (isDispo ? "Agent" : "Caller") : "Me"}:
-                        </strong>{" "}
-                        {t.text}
-                      </p>
-                    ))}
-                  </div>
-                </details>
-              )}
-            </section>
-          );
-        })}
-
-        {drills.length > 0 && (
-          <>
-            <h2 style={{ fontSize: 16, margin: "22px 0 6px" }}>
-              🎙 Drill room <span className="small muted">({drills.length} — coached practice, never graded)</span>
-            </h2>
-            {drills.map((iv) => (
-              <div key={iv.id} className="card" style={{ marginTop: 10 }}>
-                <p className="small muted" style={{ margin: 0 }}>
-                  {iv.started_at ? new Date(iv.started_at).toLocaleString() : ""}
-                </p>
-                {iv.signedUrl && <audio controls src={iv.signedUrl} style={{ width: "100%", marginTop: 8 }} />}
-              </div>
-            ))}
-          </>
-        )}
-
-        <p className="small muted" style={{ marginTop: 22 }}>
-          Only you and the {brand} team can see this page.
-        </p>
-      </main>
+      <p className="small muted" style={{ marginTop: 18 }}>
+        Only you and the {brand} team can see this page.
+      </p>
     </div>
   );
 }

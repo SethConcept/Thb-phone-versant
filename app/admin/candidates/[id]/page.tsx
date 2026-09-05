@@ -8,14 +8,14 @@ import { LEARN_MODULES } from "@/lib/modules";
 import { DISPO_MODULES, DISPO_GATE } from "@/lib/dispo";
 import { pathState, type ModuleProgressRow } from "@/lib/progress";
 import {
-  CallReport,
-  ReportBars,
+  buildCallReport,
   verdictClass,
   itemLabel,
   personaLabel,
   hardFailLabel,
   dispoAgentLabel,
-} from "@/components/call-report";
+} from "@/lib/call-report";
+import { ReportView } from "@/components/report-view";
 
 const STATUSES = ["invited", "interviewed", "scored", "certified", "passed", "failed"];
 
@@ -309,7 +309,7 @@ export default async function TraineePage({ params }: { params: Promise<{ id: st
                     {d.persona_note && <div className="small muted" style={{ marginLeft: 12 }}>{d.persona_note}</div>}
                   </>
                 ) : (
-                  <CallReport score={s} draw={draw} audience="admin" />
+                  <ReportView data={buildCallReport(s, draw, "admin")} />
                 )}
                 {s.notes && d?.kind !== "dispo" && (
                   <div className="small" style={{ marginTop: 4 }}>Notes: {s.notes}</div>
